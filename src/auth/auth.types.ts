@@ -1,7 +1,4 @@
-export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-}
+import { UserRole } from '../users/enums/users.enums';
 
 export interface JwtPayload {
   sub: number;
