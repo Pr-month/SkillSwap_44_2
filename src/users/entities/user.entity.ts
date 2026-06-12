@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { UserGender, UserRole } from '../enums/users.enums';
 
 @Entity('users')
 export class User {
@@ -25,9 +26,9 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['MALE', 'FEMALE', 'OTHER'],
+    enum: UserGender,
   })
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  gender: UserGender;
 
   @Column({ length: 1000, nullable: true })
   avatar?: string;
@@ -45,10 +46,10 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['USER', 'ADMIN'],
-    default: 'USER',
+    enum: UserRole,
+    default: UserRole.USER,
   })
-  role: 'USER' | 'ADMIN';
+  role: UserRole;
 
   @Column({ length: 500, nullable: true })
   refreshToken?: string;
