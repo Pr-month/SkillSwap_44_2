@@ -1,11 +1,9 @@
 import { registerAs } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
 
-export interface IAppConfig {
-  port: number;
-  hashSalt: string;
-}
-
-export const appConfig = registerAs('app', (): IAppConfig => ({
+export const appConfig = registerAs('app', () => ({
   port: Number(process.env.PORT) || 3000,
   hashSalt: process.env.HASH_SALT || 'default_salt_please_change',
 }));
+
+export type AppConfig = ConfigType<typeof appConfig>;
