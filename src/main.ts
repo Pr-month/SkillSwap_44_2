@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as dotenv from 'dotenv';
-
-dotenv.config();
+import { appConfig, AppConfig } from './config/app.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  const config = app.get<AppConfig>(appConfig.KEY);
+  await app.listen(config.port);
+  console.log(`Application running on port ${config.port}`);
 }
 bootstrap();
