@@ -15,6 +15,7 @@ import { UsersModule } from 'src/users/users.module';
         expiresIn: '7d',
       },
     }),
+    UsersModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],

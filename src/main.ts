@@ -1,9 +1,15 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
+import dotenv from 'dotenv';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { appConfig, AppConfig } from './config/app.config';
+
+dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   const config = app.get<AppConfig>(appConfig.KEY);
   await app.listen(config.port);
   console.log(`Application running on port ${config.port}`);
