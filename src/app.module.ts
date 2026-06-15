@@ -13,7 +13,7 @@ import { jwtConfig } from './config/jwt.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,          // делаем конфиг доступным везде без импорта ConfigModule в другие модули
-      load: [appConfig, jwtConfig, , dbConfig],       // подключаем все конфиги
+      load: [appConfig, jwtConfig, dbConfig]       // подключаем все конфиги
     }),
     TypeOrmModule.forRootAsync({
       inject: [dbConfig.KEY],

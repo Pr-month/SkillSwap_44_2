@@ -1,6 +1,6 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { appConfig, AppConfig } from './config/app.config';
 
