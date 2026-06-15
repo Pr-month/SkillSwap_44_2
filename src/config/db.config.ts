@@ -11,6 +11,8 @@ export const dbConfig = registerAs(
     password: process.env.DB_PASSWORD || 'password',
     database: process.env.DB_NAME || 'skill_swap',
     entities: [__dirname + '/**/*.entity{.ts,.js}'],
-    synchronize: true,
+    synchronize: process.env.NODE_ENV !== 'production',
   }),
 );
+
+export type TDbConfig = ReturnType<typeof dbConfig>;
