@@ -6,13 +6,13 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { appConfig } from './config/app.config';
+import { jwtConfig } from './config/jwt.config'; 
 
 @Module({
   imports: [
-    // Глобальный модуль конфигурации
     ConfigModule.forRoot({
-      isGlobal: true,
-      load: [appConfig],   // загружаем конфиг приложения
+      isGlobal: true,          // делаем конфиг доступным везде без импорта ConfigModule в другие модули
+      load: [appConfig, jwtConfig],       // подключаем наш JWT-конфиг
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
