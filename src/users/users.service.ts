@@ -2,7 +2,8 @@ import { Injectable, ConflictException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
+import { DatabaseError } from 'pg';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -13,22 +14,24 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const existing = await this.usersRepository.findOne({
-      where: { email: createUserDto.email },
-    });
-    if (existing) {
-      throw new ConflictException('Email already in use');
+    try {
+      const user = this.usersRepository.create({
+        ...createUserDto,
+        birthdate: new Date(createUserDto.birthdate),
+        skills: createUserDto.skills || [],
+        wantToLearn: createUserDto.wantToLearn || [],
+        favoriteSkills: createUserDto.favoriteSkills || [],
+      });
+      return this.usersRepository.save(user);
+    } catch (e) {
+      if (
+        e instanceof QueryFailedError &&
+        (e.driverError as DatabaseError).code === '23505'
+      ) {
+        throw new ConflictException('Email already in use');
+      }
+      throw e;
     }
-
-    const user = this.usersRepository.create({
-      ...createUserDto,
-      birthdate: new Date(createUserDto.birthdate),
-      skills: createUserDto.skills || [],
-      wantToLearn: createUserDto.wantToLearn || [],
-      favoriteSkills: createUserDto.favoriteSkills || [],
-    });
-
-    return this.usersRepository.save(user);
   }
 
   findAll() {
