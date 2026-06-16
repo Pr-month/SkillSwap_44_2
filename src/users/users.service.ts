@@ -38,12 +38,17 @@ export class UsersService {
     return `This action returns all users`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string): Promise<User | null> {
+    return this.usersRepository.findOneBy({ id });
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: string, updateUserDto: UpdateUserDto) {
+    const dataUser = await this.findOne(id);
+    if (!dataUser) {
+      return false;
+    }
+
+    return await this.usersRepository.update(id, updateUserDto);
   }
 
   remove(id: number) {

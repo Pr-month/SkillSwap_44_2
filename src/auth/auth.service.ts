@@ -18,4 +18,8 @@ export class AuthService {
 
     return this.usersService.create(toCreate);
   }
+
+    public async logout(id: string) {
+    return this.usersService.update(id, { refreshToken: null });
+  }
 }
