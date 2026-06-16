@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsEnum,
   IsArray,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -38,4 +39,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsArray()
   favoriteSkills?: string[];
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  refreshToken?: string;
 }
