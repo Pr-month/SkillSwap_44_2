@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -38,12 +38,43 @@ export class UsersService {
     return `This action returns all users`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    const user = await this.findOne(id);
+
+    Object.assign(user, {
+      ...updateUserDto,
+      birthdate: updateUserDto.birthdate
+        ? new Date(updateUserDto.birthdate)
+        : user.birthdate,
+    });
+
+    try {
+      return await this.usersRepository.save(user);
+    } catch (e) {
+      if (
+        e instanceof QueryFailedError &&
+        (e.driverError as DatabaseError).code === '23505'
+      ) {
+        throw new ConflictException('Email already in use');
+      }
+
+      throw e;
+    }
   }
 
   remove(id: number) {
