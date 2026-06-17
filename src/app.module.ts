@@ -6,15 +6,14 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dbConfig, TDbConfig } from './config/db.config';
-import { appConfig } from './config/app.config';
-import { jwtConfig } from './config/jwt.config';
 import { SkillsModule } from './skills/skills.module';
+import { configLoaders } from './config/configuration';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // делаем конфиг доступным везде без импорта ConfigModule в другие модули
-      load: [appConfig, jwtConfig, dbConfig], // подключаем все конфиги
+      load: configLoaders, // подключаем все конфиги
     }),
     TypeOrmModule.forRootAsync({
       inject: [dbConfig.KEY],
