@@ -1,4 +1,8 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -39,15 +43,14 @@ export class UsersService {
   }
 
   async findOne(id: string): Promise<User | null> {
-    return this.usersRepository.findOneBy({ id });
+    const dataUser = await this.usersRepository.findOneBy({ id });
+    if (!dataUser) {
+      throw new NotFoundException(`User data for ID "${id}" not found`);
+    }
+    return dataUser;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    const dataUser = await this.findOne(id);
-    if (!dataUser) {
-      return false;
-    }
-
     return await this.usersRepository.update(id, updateUserDto);
   }
 
