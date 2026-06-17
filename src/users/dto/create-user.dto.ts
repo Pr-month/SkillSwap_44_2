@@ -42,5 +42,5 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  refreshToken?: string;
+  refreshToken?: string | null;
 }
