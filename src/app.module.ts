@@ -7,13 +7,13 @@ import { AuthModule } from './auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dbConfig, TDbConfig } from './config/db.config';
 import { appConfig } from './config/app.config';
-import { jwtConfig } from './config/jwt.config'; 
+import { jwtConfig } from './config/jwt.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,          // делаем конфиг доступным везде без импорта ConfigModule в другие модули
-      load: [appConfig, jwtConfig, dbConfig]       // подключаем все конфиги
+      isGlobal: true, // делаем конфиг доступным везде без импорта ConfigModule в другие модули
+      load: [appConfig, jwtConfig, dbConfig], // подключаем все конфиги
     }),
     TypeOrmModule.forRootAsync({
       inject: [dbConfig.KEY],

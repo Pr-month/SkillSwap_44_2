@@ -13,4 +13,3 @@ export const jwtConfig = registerAs('JWT_CONFIG', () => ({
 
 // Типизированный конфиг для безопасного использования в сервисах/модулях
 export type TJwtConfig = ConfigType<typeof jwtConfig>;
-

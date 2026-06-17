@@ -7,13 +7,16 @@ import type { TJwtConfig } from '../../config/jwt.config';
 import type { JwtPayload } from '../auth.types';
 
 @Injectable()
-export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
+export class JwtRefreshStrategy extends PassportStrategy(
+  Strategy,
+  'jwt-refresh',
+) {
   // Конструктор внедряет ConfigService для доступа к переменным окружения и конфигам
   constructor(private configService: ConfigService) {
     // Получаем типизированный конфиг JWT по ключу 'JWT_CONFIG'
     const jwtCfg = configService.get<TJwtConfig>('JWT_CONFIG');
 
-    // Если конфиг не загружен (например, забыли добавить load: [jwtConfig] в AppModule) 
+    // Если конфиг не загружен (например, забыли добавить load: [jwtConfig] в AppModule)
     if (!jwtCfg) {
       throw new Error(
         'JWT_CONFIG is undefined. Ensure that `load: [jwtConfig]` is added to ConfigModule.forRoot() in AppModule.',
@@ -24,8 +27,9 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     super({
       // Извлекаем refresh-токен из HttpOnly-куки с именем 'refresh_token'.
       // Если куки нет, возвращаем null — тогда Passport отвергнет запрос (401).
-      jwtFromRequest: (req: Request) => (req?.cookies?.['refresh_token'] as string) ?? null,
-      // Используем отдельный секрет для refresh-токенов 
+      jwtFromRequest: (req: Request) =>
+        (req?.cookies?.['refresh_token'] as string) ?? null,
+      // Используем отдельный секрет для refresh-токенов
       secretOrKey: jwtCfg.refreshSecret,
       // Не игнорируем срок действия токена: истёкший refresh-токен будет отклонён
       ignoreExpiration: false,
@@ -50,15 +54,15 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     // Ещё раз достаём refresh-токен из куки — страховка на случай рассинхрона
     const refreshToken = req.cookies?.['refresh_token'] as string | null;
 
-    // Если куки вдруг нет (хотя Passport уже проверил токен), отвергаем запрос.    
+    // Если куки вдруг нет (хотя Passport уже проверил токен), отвергаем запрос.
     if (!refreshToken) throw new UnauthorizedException();
 
     // Возвращаем данные пользователя + сам refresh-токен.
     return {
-      sub: payload.sub,       // ID пользователя (из payload)
-      email: payload.email,   // Email (из payload)
-      role: payload.role,     // Роль (из payload)
-      refreshToken,           // Значение куки — передаём дальше в контроллер/сервис
+      sub: payload.sub, // ID пользователя (из payload)
+      email: payload.email, // Email (из payload)
+      role: payload.role, // Роль (из payload)
+      refreshToken, // Значение куки — передаём дальше в контроллер/сервис
     };
   }
 }

@@ -58,9 +58,9 @@ describe('UsersService', () => {
   it('should throw NotFoundException when user not found', async () => {
     mockRepository.findOne.mockResolvedValue(null);
 
-    await expect(
-      service.findOne('unknown-id'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findOne('unknown-id')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should update user', async () => {
@@ -72,9 +72,7 @@ describe('UsersService', () => {
 
     mockRepository.findOne.mockResolvedValue(user);
 
-    mockRepository.save.mockImplementation(
-      async (entity) => entity,
-    );
+    mockRepository.save.mockImplementation(async (entity) => entity);
 
     const result = await service.update('user-id', {
       name: 'New name',
