@@ -55,5 +55,5 @@ export class User {
 
   @Column({ length: 500, nullable: true })
   @Exclude()
-  refreshToken?: string;
+  refreshToken?: string | null;
 }

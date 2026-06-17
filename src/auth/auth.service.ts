@@ -100,4 +100,8 @@ export class AuthService {
       refreshToken,
     };
   }
+
+  public async logout(id: string) {
+    return this.usersService.update(id, { refreshToken: null });
+  }
 }
