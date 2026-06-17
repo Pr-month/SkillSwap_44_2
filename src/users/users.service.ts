@@ -3,7 +3,6 @@ import {
   ConflictException,
   NotFoundException,
   InternalServerErrorException,
-  BadRequestException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -44,12 +43,16 @@ export class UsersService {
     return `This action returns all users`;
   }
 
-  async findOne(id: string): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: {
-        id,
-      },
+  async findOne(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
     });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -63,19 +66,30 @@ export class UsersService {
     }
   }
 
-  async update(id: string, user: UpdateUserDto): Promise<void> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    const user = await this.findOne(id);
+
+    Object.assign(user, {
+      ...updateUserDto,
+      birthdate: updateUserDto.birthdate
+        ? new Date(updateUserDto.birthdate)
+        : user.birthdate,
+    });
+
     try {
-      const result = await this.usersRepository.update(id, user);
-      if (result.affected === 0) {
-        throw new NotFoundException(`Пользователь с ID ${id} не найден`);
+      return await this.usersRepository.save(user);
+    } catch (e) {
+      if (
+        e instanceof QueryFailedError &&
+        (e.driverError as DatabaseError).code === '23505'
+      ) {
+        throw new ConflictException('Email already in use');
       }
-    } catch (error) {
-      if (error instanceof QueryFailedError) {
-        throw new BadRequestException('Некорректные данные для обновления');
-      }
-      throw new InternalServerErrorException(
-        'Не удалось обновить пользователя',
-      );
+
+      throw e;
     }
   }
 
