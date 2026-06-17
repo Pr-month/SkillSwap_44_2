@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { Response } from 'express';
 import ms from 'ms';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -41,5 +42,10 @@ export class AuthController {
   @Post('logout/:id')
   async logout(@Param('id') id: string) {
     return this.authService.logout(id);
+  }
+
+  @Post('refresh')
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refresh(dto.refreshToken);
   }
 }

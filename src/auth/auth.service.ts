@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
 import { TJwtConfig } from 'src/config/jwt.config';
 import { LoginServiceResponseDto } from './dto/login-service-response.dto';
+import { JwtPayload } from './auth.types';
 
 @Injectable()
 export class AuthService {
@@ -103,5 +104,43 @@ export class AuthService {
 
   public async logout(id: string) {
     return this.usersService.update(id, { refreshToken: null });
+  }
+
+  async refresh(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    try {
+      const jwtConfig = this.getJwtConfig();
+
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+        refreshToken,
+        {
+          secret: jwtConfig.refreshSecret,
+        },
+      );
+
+      const user = await this.usersService.findOne(payload.sub);
+
+      if (user.refreshToken !== refreshToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const [accessToken, newRefreshToken] = await Promise.all([
+        this.generateAccessToken(user),
+        this.generateRefreshToken(user.id),
+      ]);
+
+      await this.usersService.update(user.id, {
+        refreshToken: newRefreshToken,
+      });
+
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 }
