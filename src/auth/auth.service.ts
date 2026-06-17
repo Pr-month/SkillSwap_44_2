@@ -1,39 +1,24 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 import bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
-import { TJwtConfig } from 'src/config/jwt.config';
+import { jwtConfig, TJwtConfig } from 'src/config/jwt.config';
 import { LoginServiceResponseDto } from './dto/login-service-response.dto';
 import { JwtPayload } from './auth.types';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @Inject(jwtConfig.KEY)
+    private readonly jwtConf: TJwtConfig,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
   ) {}
 
-  private getJwtConfig(): TJwtConfig {
-    const jwtConfig = this.configService.get<TJwtConfig>('JWT_CONFIG');
-    if (!jwtConfig) {
-      throw new InternalServerErrorException(
-        'JWT_CONFIG не найден в конфигурации',
-      );
-    }
-    return jwtConfig;
-  }
-
   private async generateAccessToken(user: User): Promise<string> {
-    const jwtConfig = this.getJwtConfig();
     return this.jwtService.signAsync(
       {
         sub: user.id,
@@ -41,26 +26,24 @@ export class AuthService {
         role: user.role,
       },
       {
-        secret: jwtConfig.accessSecret,
-        expiresIn: jwtConfig.accessExpiresIn,
+        secret: this.jwtConf.accessSecret,
+        expiresIn: this.jwtConf.accessExpiresIn,
       },
     );
   }
 
   private async generateRefreshToken(userId: string): Promise<string> {
-    const jwtConfig = this.getJwtConfig();
     return this.jwtService.signAsync(
       { sub: userId },
       {
-        secret: jwtConfig.refreshSecret,
-        expiresIn: jwtConfig.refreshExpiresIn,
+        secret: this.jwtConf.refreshSecret,
+        expiresIn: this.jwtConf.refreshExpiresIn,
       },
     );
   }
 
   getRefreshTokenExpiresIn() {
-    const jwtConfig = this.getJwtConfig();
-    return jwtConfig.refreshExpiresIn;
+    return this.jwtConf.refreshExpiresIn;
   }
 
   async register(createUserDto: CreateUserDto): Promise<User> {
@@ -111,12 +94,10 @@ export class AuthService {
     refreshToken: string;
   }> {
     try {
-      const jwtConfig = this.getJwtConfig();
-
       const payload = await this.jwtService.verifyAsync<JwtPayload>(
         refreshToken,
         {
-          secret: jwtConfig.refreshSecret,
+          secret: this.jwtConf.refreshSecret,
         },
       );
 
