@@ -16,6 +16,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { Request } from 'express';
 import { User } from './entities/user.entity';
+import { RequestWithUser } from '../auth/auth.types';
 
 @Controller('users')
 export class UsersController {
@@ -61,10 +62,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @Patch('me/password')
   async updatePassword(
-    @Req() req: Request,
+    @Req() req: RequestWithUser,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
-    const userId = (req.user as User).id;
+    const userId = req.user.sub;
     await this.usersService.updatePassword(userId, updatePasswordDto.oldPassword, updatePasswordDto.newPassword);
     return { message: 'Password successfully changed' };
   }
