@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { dbConfig, TDbConfig } from './config/db.config';
 import { SkillsModule } from './skills/skills.module';
 import { configLoaders } from './config/configuration';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { configLoaders } from './config/configuration';
     UsersModule,
     AuthModule,
     SkillsModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
