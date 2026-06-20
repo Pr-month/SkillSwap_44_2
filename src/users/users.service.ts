@@ -89,8 +89,8 @@ export class UsersService {
       throw e;
     }
   }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+  // Удалить если не будем делать удаление пользователя
+  // remove(id: number) {
+  //   return `This action removes a #${id} user`;
+  // }
 }
