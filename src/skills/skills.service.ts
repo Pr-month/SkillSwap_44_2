@@ -1,11 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
+import { Skill } from './entities/skill.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class SkillsService {
-  create(createSkillDto: CreateSkillDto) {
-    return 'This action adds a new skill';
+  constructor(
+    @InjectRepository(Skill)
+    private readonly skillRepository: Repository<Skill>,
+  ) {}
+
+  create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
+    const skill = this.skillRepository.create({
+      title: createSkillDto.title,
+      description: createSkillDto.description || '', // не знаю обязательное ли это поле
+      images: createSkillDto.images,
+      categoryId: createSkillDto.categoryId,
+      owner: {id: userId}
+    });
+
+    return this.skillRepository.save(skill);
   }
 
   findAll() {
