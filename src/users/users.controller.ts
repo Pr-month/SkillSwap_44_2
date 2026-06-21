@@ -12,9 +12,11 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { Request } from 'express';
 import { User } from './entities/user.entity';
+import { RequestWithUser } from '../auth/auth.types';
 
 @Controller('users')
 export class UsersController {
@@ -51,10 +53,22 @@ export class UsersController {
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/password')
+  async updatePassword(
+    @Req() req: RequestWithUser,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    const userId = req.user.sub;
+    await this.usersService.updatePassword(userId, updatePasswordDto.oldPassword, updatePasswordDto.newPassword);
+    return { message: 'Password successfully changed' };
+  }
+
   // Удалить если не будем делать удаление пользователя
   // Если будем, закрыть гардой с админкой
-  // @Delete(':id')
+  //  @Delete(':id')
   // remove(@Param('id') id: string) {
-  //   return this.usersService.remove(+id);
+  //  return this.usersService.remove(id);
   // }
 }

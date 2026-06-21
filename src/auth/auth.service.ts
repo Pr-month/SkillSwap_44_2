@@ -46,8 +46,19 @@ export class AuthService {
     return this.jwtConf.refreshExpiresIn;
   }
 
+  // Публичный метод для хеширования пароля (используется в UsersService)
+  async hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, 10);
+  }
+
+  // Публичный метод для сравнения пароля (используется в UsersService и login)
+  async comparePasswords(plainPassword: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hash);
+  }
+
   async register(createUserDto: CreateUserDto): Promise<User> {
-    const password = await bcrypt.hash(createUserDto.password, 10);
+    const password = await this.hashPassword(createUserDto.password);
+
 
     const toCreate: CreateUserDto = {
       ...createUserDto,
