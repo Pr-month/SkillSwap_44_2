@@ -54,11 +54,6 @@ export class UsersController {
     return this.usersService.update(id, updateUserDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
-  }
-
   @UseGuards(JwtAuthGuard)
   @Patch('me/password')
   async updatePassword(
@@ -69,4 +64,11 @@ export class UsersController {
     await this.usersService.updatePassword(userId, updatePasswordDto.oldPassword, updatePasswordDto.newPassword);
     return { message: 'Password successfully changed' };
   }
+
+  // Удалить если не будем делать удаление пользователя
+  // Если будем, закрыть гардой с админкой
+  //  @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //  return this.usersService.remove(id);
+  // }
 }

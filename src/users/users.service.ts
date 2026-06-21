@@ -94,13 +94,6 @@ export class UsersService {
     }
   }
 
-  async remove(id: string): Promise<void> {
-    const result = await this.usersRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`User #${id} not found`);
-    }
-  }
-
   async updatePassword(
     userId: string,
     oldPassword: string,
@@ -123,6 +116,13 @@ export class UsersService {
 
     // Обновление в БД
     await this.usersRepository.update(userId, { password: newHash });
+    }
+  
+  // Удалить если не будем делать удаление пользователя
+    // async remove(id: string): Promise<void> {
+    // const result = await this.usersRepository.delete(id);
+    // if (result.affected === 0) {
+    //  throw new NotFoundException(`User #${id} not found`);
+    // }
 
-  }
 }
