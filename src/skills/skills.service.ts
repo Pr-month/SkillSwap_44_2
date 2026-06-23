@@ -1,4 +1,3 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 import {
   ForbiddenException,
@@ -15,19 +14,18 @@ import { Skill } from './entities/skill.entity';
 export class SkillsService {
   constructor(
     @InjectRepository(Skill)
-    private readonly skillRepository: Repository<Skill>,
+    private readonly skillsRepository: Repository<Skill>,
   ) {}
 
   create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
-    const skill = this.skillRepository.create({
+    const skill = this.skillsRepository.create({
       title: createSkillDto.title,
       description: createSkillDto.description || '', // не знаю обязательное ли это поле
       images: createSkillDto.images,
-      categoryId: createSkillDto.categoryId,
       owner: {id: userId}
     });
 
-    return this.skillRepository.save(skill);
+    return this.skillsRepository.save(skill);
   }
 
    async findAll(query: PaginationQueryDto) {
