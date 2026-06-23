@@ -4,7 +4,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   ForbiddenException,
-  BadRequestException
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,8 +25,14 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
       const user = this.usersRepository.create({
-        ...createUserDto,
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: createUserDto.password,
+        about: createUserDto.about,
         birthdate: new Date(createUserDto.birthdate),
+        city: createUserDto.city,
+        gender: createUserDto.gender,
+        avatar: createUserDto.avatar,
         skills: createUserDto.skills || [],
         wantToLearn: createUserDto.wantToLearn || [],
         favoriteSkills: createUserDto.favoriteSkills || [],
@@ -102,13 +108,17 @@ export class UsersService {
     const user = await this.findOne(userId);
 
     // Проверка старого пароля через AuthService
-    if (!(await this.authService.comparePasswords(oldPassword, user.password))) {
+    if (
+      !(await this.authService.comparePasswords(oldPassword, user.password))
+    ) {
       throw new ForbiddenException('Old password is incorrect');
     }
 
     // Запрет на установку того же пароля
     if (oldPassword === newPassword) {
-      throw new BadRequestException('New password cannot be the same as the old one');
+      throw new BadRequestException(
+        'New password cannot be the same as the old one',
+      );
     }
 
     // Хеширование нового пароля через AuthService
@@ -116,13 +126,12 @@ export class UsersService {
 
     // Обновление в БД
     await this.usersRepository.update(userId, { password: newHash });
-    }
-  
-  // Удалить если не будем делать удаление пользователя
-    // async remove(id: string): Promise<void> {
-    // const result = await this.usersRepository.delete(id);
-    // if (result.affected === 0) {
-    //  throw new NotFoundException(`User #${id} not found`);
-    // }
+  }
 
+  // Удалить если не будем делать удаление пользователя
+  // async remove(id: string): Promise<void> {
+  // const result = await this.usersRepository.delete(id);
+  // if (result.affected === 0) {
+  //  throw new NotFoundException(`User #${id} not found`);
+  // }
 }
