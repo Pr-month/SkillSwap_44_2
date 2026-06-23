@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { SkillsService } from './skills.service';
 import { SkillsController } from './skills.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';

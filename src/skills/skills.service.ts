@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Skill } from './entities/skill.entity';
-import { Repository } from 'typeorm';
-import { PaginationQueryDto } from './dto/pagination-query.dto';
 
 @Injectable()
 export class SkillsService {
@@ -12,11 +17,18 @@ export class SkillsService {
     @InjectRepository(Skill)
     private readonly skillsRepository: Repository<Skill>,
   ) {}
-  create(createSkillDto: CreateSkillDto) {
-    return 'This action adds a new skill';
+
+  async create(createSkillDto: CreateSkillDto): Promise<Skill> {
+    const skill = this.skillsRepository.create(createSkillDto);
+    try {
+      return await this.skillsRepository.save(skill);
+    } catch (e) {
+      // Просто пробрасываем ошибку дальше. NestJS превратит её в 500 Internal Server Error      
+      throw e;
+    }
   }
 
-  async findAll(query: PaginationQueryDto) {
+   async findAll(query: PaginationQueryDto) {
     const { page, limit } = query;
 
     const [data, total] = await this.skillsRepository.findAndCount({
@@ -37,17 +49,48 @@ export class SkillsService {
       total,
       totalPages,
     };
+
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} skill`;
+  async findOne(id: string): Promise<Skill> {
+    const skill = await this.skillsRepository.findOne({ where: { id } });
+    if (!skill) {
+      throw new NotFoundException(`Skill #${id} not found`);
+    }
+    return skill;
   }
 
-  update(id: number, updateSkillDto: UpdateSkillDto) {
-    return `This action updates a #${id} skill`;
+  async update(id: string, updateSkillDto: UpdateSkillDto): Promise<Skill> {
+    // Находим существующий навык по UUID
+    const skill = await this.findOne(id);
+    
+    // Применяем переданные в DTO поля к найденной сущности (частичное обновление)
+    Object.assign(skill, updateSkillDto);
+
+    try {
+      // Сохраняем изменения в БД через TypeORM
+      return await this.skillsRepository.save(skill);
+    } catch (e) {
+      // Пробрасываем ошибку дальше — глобальный фильтр исключений NestJS обработает её
+      throw e;
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} skill`;
+  async remove(id: string, userId: string): Promise<Skill> {
+    const skill = await this.skillsRepository.findOne({
+      where: { id },
+      relations: ['owner'],
+    });
+
+    if (!skill) {
+      throw new NotFoundException('Навык не найден');
+    }
+
+    if (skill.owner.id !== userId) {
+      throw new ForbiddenException('Можно удалить только свой навык');
+    }
+
+    await this.skillsRepository.remove(skill);
+    return skill;
   }
 }

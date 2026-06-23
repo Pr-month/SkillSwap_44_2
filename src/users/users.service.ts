@@ -3,6 +3,8 @@ import {
   ConflictException,
   NotFoundException,
   InternalServerErrorException,
+  ForbiddenException,
+  BadRequestException
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,12 +12,14 @@ import { QueryFailedError, Repository } from 'typeorm';
 import { DatabaseError } from 'pg';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly authService: AuthService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -89,8 +93,36 @@ export class UsersService {
       throw e;
     }
   }
+
+  async updatePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.findOne(userId);
+
+    // Проверка старого пароля через AuthService
+    if (!(await this.authService.comparePasswords(oldPassword, user.password))) {
+      throw new ForbiddenException('Old password is incorrect');
+    }
+
+    // Запрет на установку того же пароля
+    if (oldPassword === newPassword) {
+      throw new BadRequestException('New password cannot be the same as the old one');
+    }
+
+    // Хеширование нового пароля через AuthService
+    const newHash = await this.authService.hashPassword(newPassword);
+
+    // Обновление в БД
+    await this.usersRepository.update(userId, { password: newHash });
+    }
+  
   // Удалить если не будем делать удаление пользователя
-  // remove(id: number) {
-  //   return `This action removes a #${id} user`;
-  // }
+    // async remove(id: string): Promise<void> {
+    // const result = await this.usersRepository.delete(id);
+    // if (result.affected === 0) {
+    //  throw new NotFoundException(`User #${id} not found`);
+    // }
+
 }
