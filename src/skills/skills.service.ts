@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PaginationQueryDto } from './dto/pagination-query.dto';
 import {
   ForbiddenException,
   Injectable,
@@ -27,8 +28,28 @@ export class SkillsService {
     }
   }
 
-  async findAll(): Promise<Skill[]> {
-    return this.skillsRepository.find();
+   async findAll(query: PaginationQueryDto) {
+    const { page, limit } = query;
+
+    const [data, total] = await this.skillsRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    if (total > 0 && page > totalPages) {
+      throw new NotFoundException('Страница не найдена');
+    }
+
+    return {
+      data,
+      page,
+      limit,
+      total,
+      totalPages,
+    };
+
   }
 
   async findOne(id: string): Promise<Skill> {
