@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Skill } from './entities/skill.entity'; 
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
+import { Skill } from './entities/skill.entity';
 
 @Injectable()
 export class SkillsService {
@@ -11,7 +16,6 @@ export class SkillsService {
     @InjectRepository(Skill)
     private readonly skillsRepository: Repository<Skill>,
   ) {}
-
 
   async create(createSkillDto: CreateSkillDto): Promise<Skill> {
     const skill = this.skillsRepository.create(createSkillDto);
@@ -51,11 +55,21 @@ export class SkillsService {
     }
   }
 
+  async remove(id: string, userId: string): Promise<Skill> {
+    const skill = await this.skillsRepository.findOne({
+      where: { id },
+      relations: ['owner'],
+    });
 
-  async remove(id: string): Promise<void> {
-    const result = await this.skillsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Skill #${id} not found`);
+    if (!skill) {
+      throw new NotFoundException('Навык не найден');
     }
+
+    if (skill.owner.id !== userId) {
+      throw new ForbiddenException('Можно удалить только свой навык');
+    }
+
+    await this.skillsRepository.remove(skill);
+    return skill;
   }
 }
