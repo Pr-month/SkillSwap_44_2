@@ -21,9 +21,13 @@ import { RequestWithUser } from 'src/auth/auth.types';
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Body() createSkillDto: CreateSkillDto) {
-    return this.skillsService.create(createSkillDto);
+  create(
+    @Req() req: RequestWithUser,
+    @Body() createSkillDto: CreateSkillDto
+  ) {
+    return this.skillsService.create(req.user.sub, createSkillDto);
   }
 
   @Get()

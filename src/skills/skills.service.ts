@@ -15,17 +15,19 @@ import { Skill } from './entities/skill.entity';
 export class SkillsService {
   constructor(
     @InjectRepository(Skill)
-    private readonly skillsRepository: Repository<Skill>,
+    private readonly skillRepository: Repository<Skill>,
   ) {}
 
-  async create(createSkillDto: CreateSkillDto): Promise<Skill> {
-    const skill = this.skillsRepository.create(createSkillDto);
-    try {
-      return await this.skillsRepository.save(skill);
-    } catch (e) {
-      // Просто пробрасываем ошибку дальше. NestJS превратит её в 500 Internal Server Error      
-      throw e;
-    }
+  create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
+    const skill = this.skillRepository.create({
+      title: createSkillDto.title,
+      description: createSkillDto.description || '', // не знаю обязательное ли это поле
+      images: createSkillDto.images,
+      categoryId: createSkillDto.categoryId,
+      owner: {id: userId}
+    });
+
+    return this.skillRepository.save(skill);
   }
 
    async findAll(query: PaginationQueryDto) {
