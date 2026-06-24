@@ -1,3 +1,4 @@
+import { Skill } from 'src/skills/entities/skill.entity';
 import { UserGender } from '../enums/users.enums';
 import {
   MinLength,
@@ -32,13 +33,13 @@ export class CreateUserDto {
   avatar?: string;
   @IsOptional()
   @IsArray()
-  skills?: string[];
+  skills?: Skill[];
   @IsOptional()
   @IsArray()
   wantToLearn?: string[];
   @IsOptional()
   @IsArray()
-  favoriteSkills?: string[];
+  favoriteSkills?: Skill[];
   @IsOptional()
   @IsString()
   @MaxLength(500)
