@@ -14,7 +14,7 @@ async function bootstrap() {
 
   app.use(
     '/uploads',
-    express.static(path.join(__dirname, 'public', 'uploads')),
+    express.static(path.join(process.cwd(), 'public', 'uploads')),
   );
 
   app.useGlobalPipes(new ValidationPipe());

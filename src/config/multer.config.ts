@@ -1,5 +1,5 @@
 import * as multer from 'multer';
-import { Express } from 'express';
+import fs from 'fs';
 
 export const multerConfig = {
   limits: {
@@ -7,7 +7,9 @@ export const multerConfig = {
   },
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, 'public/uploads');
+      const dir = 'public/uploads';
+      fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
     },
     filename: (req, file, cb) => {
       const randomName = Math.random().toString(36).substring(2, 9);
