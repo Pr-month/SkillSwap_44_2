@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { UserGender, UserRole } from '../enums/users.enums';
-import { Skill } from 'src/skills/entities/skill.entity';
+import { Skill } from '../../skills/entities/skill.entity';
 
 @Entity('users')
 export class User {
