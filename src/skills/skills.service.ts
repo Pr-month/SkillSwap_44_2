@@ -79,7 +79,7 @@ export class SkillsService {
   async remove(id: string, userId: string): Promise<Skill> {
     const skill = await this.skillsRepository.findOne({
       where: { id },
-      relations: ['owner'],
+      relations: { owner: true },
     });
 
     if (!skill) {
