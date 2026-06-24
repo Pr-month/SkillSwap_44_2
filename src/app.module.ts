@@ -9,6 +9,7 @@ import { dbConfig, TDbConfig } from './config/db.config';
 import { SkillsModule } from './skills/skills.module';
 import { configLoaders } from './config/configuration';
 import { RequestsModule } from './requests/requests.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RequestsModule } from './requests/requests.module';
     AuthModule,
     SkillsModule,
     RequestsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
