@@ -3,18 +3,22 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ConflictException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { Skill } from './entities/skill.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SkillsService {
   constructor(
-    @InjectRepository(Skill)
+    @InjectRepository(Skill)    
     private readonly skillsRepository: Repository<Skill>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
@@ -93,4 +97,51 @@ export class SkillsService {
     await this.skillsRepository.remove(skill);
     return skill;
   }
+
+  async addToFavorite(userId: string, skillId: string): Promise<void> {
+    const skill = await this.skillsRepository.findOne({
+      where: { id: skillId } as FindOptionsWhere<Skill>,
+    });
+    if (!skill) {
+      throw new NotFoundException(`Skill #${skillId} not found`);
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: userId } as FindOptionsWhere<User>,
+      relations: { favoriteSkills: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Проверка на дубликат
+    const exists = user.favoriteSkills.some(s => s.id === skillId);
+    if (exists) {
+      throw new ConflictException('Skill is already in favorites');
+    }
+
+    user.favoriteSkills.push(skill);
+    await this.usersRepository.save(user);
+  }
+
+  async removeFromFavorite(userId: string, skillId: string): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId } as FindOptionsWhere<User>,
+      relations: { favoriteSkills: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const index = user.favoriteSkills.findIndex(s => s.id === skillId);
+    if (index === -1) {
+      // Если навыка нет в избранном — просто ничего не делаем (или можно кидать NotFoundException)
+      return;
+    }
+
+    user.favoriteSkills.splice(index, 1);
+    await this.usersRepository.save(user);
+  }  
 }
