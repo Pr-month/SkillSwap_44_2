@@ -17,7 +17,6 @@ async function bootstrap() {
     express.static(path.join(process.cwd(), 'public', 'uploads')),
   );
 
-  app.useGlobalPipes(new ValidationPipe());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
