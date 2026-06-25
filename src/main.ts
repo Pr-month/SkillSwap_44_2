@@ -4,11 +4,18 @@ import * as dotenv from 'dotenv';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { appConfig, AppConfig } from './config/app.config';
 import { AllExceptionsFilter } from './common/all-exception.filter';
+import * as express from 'express';
+import path from 'path';
 
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(
+    '/uploads',
+    express.static(path.join(process.cwd(), 'public', 'uploads')),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
