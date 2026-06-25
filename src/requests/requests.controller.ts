@@ -1,7 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Req,
+} from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
+import { RequestWithUser } from '../auth/auth.types';
 
 @Controller('requests')
 export class RequestsController {
@@ -15,6 +25,11 @@ export class RequestsController {
   @Get()
   findAll() {
     return this.requestsService.findAll();
+  }
+
+  @Get('incoming')
+  getIncoming(@Req() req: RequestWithUser) {
+    return this.requestsService.findIncoming(req.user.sub);
   }
 
   @Get(':id')
