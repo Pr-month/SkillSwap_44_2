@@ -33,6 +33,26 @@ export class RequestsService {
     });
   }
 
+  findOutgoing(userId: string): Promise<Request[]> {
+    return this.requestsRepository.find({
+      where: {
+        sender: {
+          id: userId,
+        },
+        status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
+      },
+      relations: {
+        sender: true,
+        receiver: true,
+        offeredSkill: true,
+        requestedSkill: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
   create(createRequestDto: CreateRequestDto) {
     return 'This action adds a new request';
   }
