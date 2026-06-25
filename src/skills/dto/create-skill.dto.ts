@@ -4,7 +4,7 @@ export class CreateSkillDto {
   @IsString()
   @MinLength(2)
   title: string;
-  
+
   @IsString()
   description?: string;
 
