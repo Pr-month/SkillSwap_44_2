@@ -6,6 +6,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { JwtAuthGuard } from './guards/jwt.guard';
 import { UsersModule } from '../users/users.module';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -18,8 +19,9 @@ import { UsersModule } from '../users/users.module';
     JwtStrategy,
     JwtRefreshStrategy,
     JwtAuthGuard,
+    RolesGuard,
     // если есть JwtRefreshGuard – тоже добавить
   ],
-  exports: [AuthService]
+  exports: [AuthService],
 })
 export class AuthModule {}
