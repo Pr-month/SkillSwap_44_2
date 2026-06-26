@@ -1,16 +1,6 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Req } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
-import { UpdateRequestDto } from './dto/update-request.dto';
 import { RequestWithUser } from '../auth/auth.types';
 
 @Controller('requests')
@@ -18,14 +8,18 @@ export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
 
   @Post()
-  create(@Body() createRequestDto: CreateRequestDto) {
-    return this.requestsService.create(createRequestDto);
+  create(
+    @Body() createRequestDto: CreateRequestDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const senderId = req.user.sub;
+    return this.requestsService.create(createRequestDto, senderId);
   }
 
-  @Get()
-  findAll() {
-    return this.requestsService.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.requestsService.findAll();
+  // }
 
   @Get('incoming')
   getIncoming(@Req() req: RequestWithUser) {
@@ -37,18 +31,18 @@ export class RequestsController {
     return this.requestsService.findOutgoing(req.user.sub);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.requestsService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.requestsService.findOne(+id);
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRequestDto: UpdateRequestDto) {
-    return this.requestsService.update(+id, updateRequestDto);
-  }
+  // @Patch(':id')
+  // update(@Param('id') id: string, @Body() updateRequestDto: UpdateRequestDto) {
+  //   return this.requestsService.update(+id, updateRequestDto);
+  // }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.requestsService.remove(+id);
-  }
+  // @Delete(':id')
+  // remove(@Param('id') id: string) {
+  //   return this.requestsService.remove(+id);
+  // }
 }

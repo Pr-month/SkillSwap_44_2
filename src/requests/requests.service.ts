@@ -1,16 +1,25 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateRequestDto } from './dto/create-request.dto';
-import { UpdateRequestDto } from './dto/update-request.dto';
 import { Request } from './entities/request.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { RequestStatus } from './enums/requests.enums';
+import { Skill } from 'src/skills/entities/skill.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class RequestsService {
   constructor(
     @InjectRepository(Request)
     private readonly requestsRepository: Repository<Request>,
+    @InjectRepository(Skill)
+    private readonly skillsRepository: Repository<Skill>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   findIncoming(userId: string): Promise<Request[]> {
@@ -53,23 +62,82 @@ export class RequestsService {
     });
   }
 
-  create(createRequestDto: CreateRequestDto) {
-    return 'This action adds a new request';
+  async create(
+    createRequestDto: CreateRequestDto,
+    senderId: string,
+  ): Promise<Request> {
+    const { offeredSkillId, requestedSkillId } = createRequestDto;
+
+    const [offeredSkill, requestedSkill] = await Promise.all([
+      this.skillsRepository.findOne({ where: { id: offeredSkillId } }),
+      this.skillsRepository.findOne({ where: { id: requestedSkillId } }),
+    ]);
+
+    if (!offeredSkill) {
+      throw new NotFoundException(
+        `Offered skill with id ${offeredSkillId} not found`,
+      );
+    }
+    if (!requestedSkill) {
+      throw new NotFoundException(
+        `Requested skill with id ${requestedSkillId} not found`,
+      );
+    }
+
+    const receiverCandidate = requestedSkill.owner;
+    if (!receiverCandidate) {
+      throw new ConflictException('Requested skill does not have an owner');
+    }
+
+    let receiverUser: User | null;
+
+    if (typeof receiverCandidate === 'string') {
+      receiverUser = await this.usersRepository.findOne({
+        where: { id: receiverCandidate },
+      });
+      if (!receiverUser) {
+        throw new NotFoundException('Receiver user not found');
+      }
+    } else {
+      receiverUser = receiverCandidate;
+    }
+
+    if (senderId === receiverUser.id) {
+      throw new ConflictException('Cannot create a request to yourself');
+    }
+
+    const senderUser = await this.usersRepository.findOne({
+      where: { id: senderId },
+    });
+    if (!senderUser) {
+      throw new NotFoundException('Sender user not found');
+    }
+
+    const newRequest = this.requestsRepository.create({
+      sender: senderUser,
+      receiver: receiverUser,
+      offeredSkill,
+      requestedSkill,
+      status: RequestStatus.PENDING,
+      isRead: false,
+    });
+
+    return this.requestsRepository.save(newRequest);
   }
 
-  findAll() {
-    return `This action returns all requests`;
-  }
+  // findAll() {
+  //   return `This action returns all requests`;
+  // }
 
-  findOne(id: number) {
-    return `This action returns a #${id} request`;
-  }
+  // findOne(id: number) {
+  //   return `This action returns a #${id} request`;
+  // }
 
-  update(id: number, updateRequestDto: UpdateRequestDto) {
-    return `This action updates a #${id} request`;
-  }
+  // update(id: number, updateRequestDto: UpdateRequestDto) {
+  //   return `This action updates a #${id} request`;
+  // }
 
-  remove(id: number) {
-    return `This action removes a #${id} request`;
-  }
+  // remove(id: number) {
+  //   return `This action removes a #${id} request`;
+  // }
 }
