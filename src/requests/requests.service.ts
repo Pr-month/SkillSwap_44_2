@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
 import { Request } from './entities/request.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { RequestStatus } from './enums/requests.enums';
+import { UserRole } from 'src/users/enums/users.enums';
 
 @Injectable()
 export class RequestsService {
@@ -69,7 +70,7 @@ export class RequestsService {
     return `This action updates a #${id} request`;
   }
 
-  async remove(id: string, userId: string): Promise<Request> {
+  async remove(id: string, userId: string, role: UserRole): Promise<Request> {
     const request = await this.requestsRepository.findOne({
       where: {
         id,
@@ -80,11 +81,11 @@ export class RequestsService {
     });
 
     if (!request) {
-      throw new Error('Запрос не найден');
+      throw new NotFoundException('Запрос не найден');
     }
 
-    if (request.sender.id !== userId) {
-      throw new Error('Вы не можете удалить этот запрос');
+    if (request.sender.id !== userId && role !== UserRole.ADMIN) {
+      throw new ForbiddenException('Вы не можете удалить этот запрос');
     }
 
     await this.requestsRepository.remove(request);

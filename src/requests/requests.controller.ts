@@ -52,6 +52,6 @@ export class RequestsController {
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
-    return this.requestsService.remove(id, req.user.sub);
+    return this.requestsService.remove(id, req.user.sub, req.user.role);
   }
 }
