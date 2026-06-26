@@ -1,16 +1,58 @@
 import { Injectable } from '@nestjs/common';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Request } from './entities/request.entity';
-import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { RequestStatus } from './enums/requests.enums';
 
 @Injectable()
 export class RequestsService {
   constructor(
     @InjectRepository(Request)
-    private readonly requestRepository: Repository<Request>,
+    private readonly requestsRepository: Repository<Request>,
   ) {}
+
+  findIncoming(userId: string): Promise<Request[]> {
+    return this.requestsRepository.find({
+      where: {
+        receiver: {
+          id: userId,
+        },
+        status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
+      },
+      relations: {
+        sender: true,
+        receiver: true,
+        offeredSkill: true,
+        requestedSkill: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
+  findOutgoing(userId: string): Promise<Request[]> {
+    return this.requestsRepository.find({
+      where: {
+        sender: {
+          id: userId,
+        },
+        status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
+      },
+      relations: {
+        sender: true,
+        receiver: true,
+        offeredSkill: true,
+        requestedSkill: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
   create(createRequestDto: CreateRequestDto) {
     return 'This action adds a new request';
   }
@@ -28,7 +70,7 @@ export class RequestsService {
   }
 
   async remove(id: string, userId: string): Promise<Request> {
-    const request = await this.requestRepository.findOne({
+    const request = await this.requestsRepository.findOne({
       where: {
         id,
       },
@@ -45,7 +87,7 @@ export class RequestsService {
       throw new Error('Вы не можете удалить этот запрос');
     }
 
-    await this.requestRepository.remove(request);
+    await this.requestsRepository.remove(request);
 
     return request;
   }
