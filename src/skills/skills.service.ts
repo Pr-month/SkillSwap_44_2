@@ -9,12 +9,15 @@ import { Repository } from 'typeorm';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { Skill } from './entities/skill.entity';
+import { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class SkillsService {
   constructor(
     @InjectRepository(Skill)
     private readonly skillsRepository: Repository<Skill>,
+    @InjectRepository(User)
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
@@ -91,5 +94,28 @@ export class SkillsService {
 
     await this.skillsRepository.remove(skill);
     return skill;
+  }
+
+  async removeFromFavorites(skillId: string, userId: string): Promise<User> {
+    const skill = await this.skillsRepository.findOne({ where: { id: skillId } });
+
+    if (!skill) {
+      throw new NotFoundException('Навык не найден');
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: { favoriteSkills: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    user.favoriteSkills = (user.favoriteSkills ?? []).filter(
+      (favoriteSkill) => favoriteSkill.id !== skillId,
+    );
+
+    return this.usersRepository.save(user);
   }
 }
