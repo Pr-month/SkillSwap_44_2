@@ -46,7 +46,7 @@ export class User {
   @OneToMany(() => Skill, (skill) => skill.owner)
   skills: Skill[];
 
-  @Column({ array: true })
+  @Column('text', { array: true })
   wantToLearn: string[];
 
   @ManyToMany(() => Skill)
@@ -60,7 +60,7 @@ export class User {
   })
   role: UserRole;
 
-  @Column({ length: 500, nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   @Exclude()
   refreshToken?: string | null;
 }
