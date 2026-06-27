@@ -4,6 +4,7 @@ import { Skill } from '../skills/entities/skill.entity';
 import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import { seedUsers } from './data/users.data';
+import { UserGender, UserRole } from '../users/enums/users.enums';
 
 dotenv.config();
 
@@ -52,6 +53,37 @@ async function seedUsersFn() {
     await userRepo.save(user);
     console.log(`  ✓ ${userData.email} (${userData.name})`);
   }
+
+  // --- Создание администратора из env ---
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@skillswap.ru';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'AdminSuper2024!';
+  const adminName = 'Администратор';
+
+  const existingAdmin = await userRepo.findOne({
+    where: { email: adminEmail },
+  });
+
+  if (existingAdmin) {
+    console.log(`  ↻ ${adminEmail} — администратор уже существует, пропускаю`);
+  } else {
+    const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
+
+    const admin = userRepo.create({
+      name: adminName,
+      email: adminEmail,
+      password: hashedAdminPassword,
+      about: 'Главный администратор платформы SkillSwap.',
+      birthdate: new Date('1990-01-01'),
+      city: 'Москва',
+      gender: UserGender.MALE,
+      role: UserRole.ADMIN,
+      wantToLearn: [],
+    });
+
+    await userRepo.save(admin);
+    console.log(`  ✓ ${adminEmail} — администратор создан`);
+  }
+  // -------------------------------------
 
   const total = await userRepo.count();
   console.log(`\nСидинг завершён. Всего пользователей: ${total}`);
