@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -21,6 +22,34 @@ export class RequestsService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
   ) {}
+
+  private async getRequestForReceiver(
+    requestId: string,
+    userId: string,
+  ): Promise<Request> {
+    const request = await this.requestsRepository.findOne({
+      where: { id: requestId },
+      relations: { receiver: true },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`Request with id ${requestId} not found`);
+    }
+
+    if (!request.receiver || request.receiver.id !== userId) {
+      throw new ConflictException('Only the receiver can perform this action');
+    }
+
+    return request;
+  }
+
+  private assertNotFinalStatus(status: RequestStatus): void {
+    if (status === RequestStatus.REJECTED || status === RequestStatus.DONE) {
+      throw new BadRequestException(
+        'Cannot perform action on a request with a final status',
+      );
+    }
+  }
 
   findIncoming(userId: string): Promise<Request[]> {
     return this.requestsRepository.find({
@@ -125,16 +154,32 @@ export class RequestsService {
     return this.requestsRepository.save(newRequest);
   }
 
+  async markAsRead(requestId: string, userId: string): Promise<Request> {
+    const request = await this.getRequestForReceiver(requestId, userId);
+    request.isRead = true;
+    return this.requestsRepository.save(request);
+  }
+
+  async acceptRequest(requestId: string, userId: string): Promise<Request> {
+    const request = await this.getRequestForReceiver(requestId, userId);
+    this.assertNotFinalStatus(request.status);
+    request.status = RequestStatus.ACCEPTED;
+    return this.requestsRepository.save(request);
+  }
+
+  async rejectRequest(requestId: string, userId: string): Promise<Request> {
+    const request = await this.getRequestForReceiver(requestId, userId);
+    this.assertNotFinalStatus(request.status);
+    request.status = RequestStatus.REJECTED;
+    return this.requestsRepository.save(request);
+  }
+
   // findAll() {
   //   return `This action returns all requests`;
   // }
 
   // findOne(id: number) {
   //   return `This action returns a #${id} request`;
-  // }
-
-  // update(id: number, updateRequestDto: UpdateRequestDto) {
-  //   return `This action updates a #${id} request`;
   // }
 
   // remove(id: number) {

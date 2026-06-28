@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, Patch, Param } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestWithUser } from '../auth/auth.types';
@@ -36,10 +36,23 @@ export class RequestsController {
   //   return this.requestsService.findOne(+id);
   // }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateRequestDto: UpdateRequestDto) {
-  //   return this.requestsService.update(+id, updateRequestDto);
-  // }
+  @Patch(':id/read')
+  markAsRead(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const userId = req.user.sub;
+    return this.requestsService.markAsRead(id, userId);
+  }
+
+  @Patch(':id/accept')
+  accept(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const userId = req.user.sub;
+    return this.requestsService.acceptRequest(id, userId);
+  }
+
+  @Patch(':id/reject')
+  reject(@Param('id') id: string, @Req() req: RequestWithUser) {
+    const userId = req.user.sub;
+    return this.requestsService.rejectRequest(id, userId);
+  }
 
   // @Delete(':id')
   // remove(@Param('id') id: string) {
