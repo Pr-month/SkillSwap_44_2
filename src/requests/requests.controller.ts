@@ -6,12 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
   Req,
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { UpdateRequestDto } from './dto/update-request.dto';
-import { RequestWithUser } from '../auth/auth.types';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { RequestWithUser } from 'src/auth/auth.types';
 
 @Controller('requests')
 export class RequestsController {
@@ -47,8 +49,9 @@ export class RequestsController {
     return this.requestsService.update(+id, updateRequestDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.requestsService.remove(+id);
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.requestsService.remove(id, req.user.sub, req.user.role);
   }
 }
