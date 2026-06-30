@@ -1,7 +1,19 @@
-import { Controller, Get, Post, Body, Req, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
-import { RequestWithUser } from '../auth/auth.types';
+import { UpdateRequestDto } from './dto/update-request.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { RequestWithUser } from 'src/auth/auth.types';
 
 @Controller('requests')
 export class RequestsController {
@@ -52,6 +64,11 @@ export class RequestsController {
   reject(@Param('id') id: string, @Req() req: RequestWithUser) {
     const userId = req.user.sub;
     return this.requestsService.rejectRequest(id, userId);
+    
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.requestsService.remove(id, req.user.sub, req.user.role);
   }
 
   // @Delete(':id')
