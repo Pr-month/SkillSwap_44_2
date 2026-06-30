@@ -1,30 +1,32 @@
 import { DataSource } from 'typeorm';
 import { User } from '../users/entities/user.entity';
-import { Skill } from '../skills/entities/skill.entity';
+import { Category } from '../categories/entities/category.entity';
 import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import { seedUsers } from './data/users.data';
-import { UserGender, UserRole } from '../users/enums/users.enums';
+import { dbConfig } from '../config/db.config';
+import { Skill } from 'src/skills/entities/skill.entity';
 
 dotenv.config();
 
-async function seedUsersFn() {
-  const dataSource = new DataSource({
-    type: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    username: process.env.DB_USERNAME || 'admin',
-    password: process.env.DB_PASSWORD || 'password',
-    database: process.env.DB_NAME || 'skill_swap',
-    entities: [User, Skill],
-    synchronize: true,
-  });
+const dataSource = new DataSource({
+  ...dbConfig(),
+  entities: [User, Skill, Category],
+});
 
+async function seedUsersFn() {
   await dataSource.initialize();
 
   const userRepo = dataSource.getRepository(User);
+  const categoryRepo = dataSource.getRepository(Category);
 
-  console.log('Начало сидинга пользователей...');
+  console.log('Начало сидинга тестовых пользователей...');
+
+  const allCategories = await categoryRepo.find();
+  const categoryMap = new Map<string, Category>();
+  for (const cat of allCategories) {
+    categoryMap.set(cat.name, cat);
+  }
 
   for (const userData of seedUsers) {
     const existing = await userRepo.findOne({
@@ -38,6 +40,10 @@ async function seedUsersFn() {
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
+    const resolvedCategories = userData.wantToLearn
+      .map((name) => categoryMap.get(name))
+      .filter((c): c is Category => c !== undefined);
+
     const user = userRepo.create({
       name: userData.name,
       email: userData.email,
@@ -47,43 +53,12 @@ async function seedUsersFn() {
       city: userData.city,
       gender: userData.gender,
       role: userData.role,
-      wantToLearn: userData.wantToLearn,
+      wantToLearn: resolvedCategories,
     });
 
     await userRepo.save(user);
     console.log(`  ✓ ${userData.email} (${userData.name})`);
   }
-
-  // --- Создание администратора из env ---
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@skillswap.ru';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'AdminSuper2024!';
-  const adminName = 'Администратор';
-
-  const existingAdmin = await userRepo.findOne({
-    where: { email: adminEmail },
-  });
-
-  if (existingAdmin) {
-    console.log(`  ↻ ${adminEmail} — администратор уже существует, пропускаю`);
-  } else {
-    const hashedAdminPassword = await bcrypt.hash(adminPassword, 10);
-
-    const admin = userRepo.create({
-      name: adminName,
-      email: adminEmail,
-      password: hashedAdminPassword,
-      about: 'Главный администратор платформы SkillSwap.',
-      birthdate: new Date('1990-01-01'),
-      city: 'Москва',
-      gender: UserGender.MALE,
-      role: UserRole.ADMIN,
-      wantToLearn: [],
-    });
-
-    await userRepo.save(admin);
-    console.log(`  ✓ ${adminEmail} — администратор создан`);
-  }
-  // -------------------------------------
 
   const total = await userRepo.count();
   console.log(`\nСидинг завершён. Всего пользователей: ${total}`);

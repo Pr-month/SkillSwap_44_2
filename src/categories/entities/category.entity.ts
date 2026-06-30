@@ -4,7 +4,9 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('categories')
 export class Category {
@@ -21,4 +23,7 @@ export class Category {
 
   @OneToMany(() => Category, (category) => category.parent)
   children: Category[];
+
+  @ManyToMany(() => User, (user) => user.wantToLearn)
+  usersWhoWantToLearn: User[];
 }

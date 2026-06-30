@@ -2,7 +2,10 @@
 import { User } from '../../users/entities/user.entity';
 import { UserGender, UserRole } from '../../users/enums/users.enums';
 
-export const seedUsers: ({ password: string } & Partial<User>)[] = [
+export const seedUsers: ({ password: string; wantToLearn: string[] } & Omit<
+  Partial<User>,
+  'wantToLearn'
+>)[] = [
   {
     name: 'Мария Петрова',
     email: 'maria@skillswap.ru',

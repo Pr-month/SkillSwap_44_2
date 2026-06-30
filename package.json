@@ -7,6 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "seed:users": "ts-node -r tsconfig-paths/register --transpile-only src/seeding/seed-users.ts",
+    "seed:admin": "ts-node -r tsconfig-paths/register --transpile-only src/seeding/seed-admin.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
