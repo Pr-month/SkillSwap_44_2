@@ -137,8 +137,7 @@ export class SkillsService {
 
     const index = user.favoriteSkills.findIndex(s => s.id === skillId);
     if (index === -1) {
-      // Если навыка нет в избранном — просто ничего не делаем (или можно кидать NotFoundException)
-      return;
+      throw new NotFoundException(`Skill #${skillId} is not in favorites`);      
     }
 
     user.favoriteSkills.splice(index, 1);
