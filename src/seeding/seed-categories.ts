@@ -3,16 +3,12 @@ import { DataSource } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { CategoriesData } from './data/category.data';
 import * as dotenv from 'dotenv';
+import { dbConfig } from '../config/db.config';
 dotenv.config();
 
 async function seedCategories() {
   const dataSource = new DataSource({
-    type: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    username: process.env.DB_USERNAME || 'admin',
-    password: process.env.DB_PASSWORD || 'password',
-    database: process.env.DB_NAME || 'skill_swap',
+    ...dbConfig(),
     entities: [Category],
   });
 

@@ -5,10 +5,10 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "scripts": {
-    "seed:categories": "ts-node --transpile-only src/seeding/seed-categories.ts",
-    "seed:users": "ts-node -r tsconfig-paths/register --transpile-only src/seeding/seed-users.ts",
-    "seed:admin": "ts-node -r tsconfig-paths/register --transpile-only src/seeding/seed-admin.ts",
+  "scripts": {         
+    "seed:categories": "ts-node --transpile-only -r tsconfig-paths/register src/seeding/seed-categories.ts",
+    "seed:users": "ts-node --transpile-only -r tsconfig-paths/register src/seeding/seed-users.ts",
+    "seed:admin": "ts-node --transpile-only  -r tsconfig-paths/register src/seeding/seed-admin.ts",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
