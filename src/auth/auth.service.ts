@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
@@ -14,6 +19,7 @@ export class AuthService {
   constructor(
     @Inject(jwtConfig.KEY)
     private readonly jwtConf: TJwtConfig,
+    @Inject(forwardRef(() => UsersService))
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
   ) {}
@@ -52,13 +58,15 @@ export class AuthService {
   }
 
   // Публичный метод для сравнения пароля (используется в UsersService и login)
-  async comparePasswords(plainPassword: string, hash: string): Promise<boolean> {
+  async comparePasswords(
+    plainPassword: string,
+    hash: string,
+  ): Promise<boolean> {
     return bcrypt.compare(plainPassword, hash);
   }
 
   async register(createUserDto: CreateUserDto): Promise<User> {
     const password = await this.hashPassword(createUserDto.password);
-
 
     const toCreate: CreateUserDto = {
       ...createUserDto,

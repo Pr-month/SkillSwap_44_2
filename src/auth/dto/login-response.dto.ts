@@ -12,9 +12,9 @@ export class LoginResponseDto {
     city: string;
     gender: UserGender;
     avatar?: string;
-    skills: string[];
+    //skills: string[];
     wantToLearn: string[];
-    favoriteSkills: string[];
+    //favoriteSkills: string[];
     role: UserRole;
   };
 
