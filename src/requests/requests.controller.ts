@@ -64,7 +64,8 @@ export class RequestsController {
   reject(@Param('id') id: string, @Req() req: RequestWithUser) {
     const userId = req.user.sub;
     return this.requestsService.rejectRequest(id, userId);
-    
+  }
+
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {

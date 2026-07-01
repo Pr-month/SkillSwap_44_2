@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "skill-swap",
   "version": "0.0.1",
   "description": "",
@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "seed:categories": "ts-node --transpile-only src/seeding/seed-categories.ts",
     "seed:users": "ts-node -r tsconfig-paths/register --transpile-only src/seeding/seed-users.ts",
     "seed:admin": "ts-node -r tsconfig-paths/register --transpile-only src/seeding/seed-admin.ts",
     "build": "nest build",

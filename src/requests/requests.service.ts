@@ -169,7 +169,8 @@ export class RequestsService {
     this.assertNotFinalStatus(request.status);
     request.status = RequestStatus.REJECTED;
     return this.requestsRepository.save(request);
-    
+  }
+
   async remove(id: string, userId: string, role: UserRole): Promise<Request> {
     const request = await this.requestsRepository.findOne({
       where: {
