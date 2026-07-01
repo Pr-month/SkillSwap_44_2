@@ -7,7 +7,7 @@ import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Skill]),
+    TypeOrmModule.forFeature([Skill, User]),
     UsersModule, 
   ],
   controllers: [SkillsController],

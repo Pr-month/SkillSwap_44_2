@@ -26,13 +26,13 @@ export class SkillsService {
       title: createSkillDto.title,
       description: createSkillDto.description || '', // не знаю обязательное ли это поле
       images: createSkillDto.images,
-      owner: {id: userId}
+      owner: { id: userId },
     });
 
     return this.skillsRepository.save(skill);
   }
 
-   async findAll(query: PaginationQueryDto) {
+  async findAll(query: PaginationQueryDto) {
     const { page, limit } = query;
 
     const [data, total] = await this.skillsRepository.findAndCount({
@@ -53,7 +53,6 @@ export class SkillsService {
       total,
       totalPages,
     };
-
   }
 
   async findOne(id: string): Promise<Skill> {
@@ -67,7 +66,7 @@ export class SkillsService {
   async update(id: string, updateSkillDto: UpdateSkillDto): Promise<Skill> {
     // Находим существующий навык по UUID
     const skill = await this.findOne(id);
-    
+
     // Применяем переданные в DTO поля к найденной сущности (частичное обновление)
     Object.assign(skill, updateSkillDto);
 
@@ -108,6 +107,15 @@ export class SkillsService {
 
     const user = await this.usersRepository.findOne({
       where: { id: userId } as FindOptionsWhere<User>,
+  async removeFromFavorites(skillId: string, userId: string): Promise<User> {
+    const skill = await this.skillsRepository.findOne({ where: { id: skillId } });
+
+    if (!skill) {
+      throw new NotFoundException('Навык не найден');
+    }
+
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
       relations: { favoriteSkills: true },
     });
 
