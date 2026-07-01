@@ -42,14 +42,6 @@ export class SkillsController {
     return this.skillsService.update(id, updateSkillDto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Delete(':id/favorite')
-  async removeFromFavorites(
-    @Param('id') id: string,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.skillsService.removeFromFavorites(id, req.user.sub);
-  }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
@@ -77,5 +69,5 @@ export class SkillsController {
     const userId = req.user.sub;
     await this.skillsService.removeFromFavorite(userId, skillId);
     return { message: 'Skill removed from favorites' };
-  }  
+  }
 }
