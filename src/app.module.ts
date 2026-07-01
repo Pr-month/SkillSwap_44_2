@@ -11,6 +11,7 @@ import { configLoaders } from './config/configuration';
 import { FilesModule } from './files/files.module';
 import { RequestsModule } from './requests/requests.module';
 import { CategoriesModule } from './categories/categories.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CategoriesModule } from './categories/categories.module';
     FilesModule,
     RequestsModule,
     CategoriesModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
