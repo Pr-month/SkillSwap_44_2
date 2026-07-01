@@ -1,5 +1,6 @@
-import { Skill } from 'src/skills/entities/skill.entity';
 import { UserGender } from '../enums/users.enums';
+import { Skill } from '../../skills/entities/skill.entity';
+import { Category } from '../../categories/entities/category.entity';
 import {
   MinLength,
   IsEmail,
@@ -36,7 +37,7 @@ export class CreateUserDto {
   skills?: Skill[];
   @IsOptional()
   @IsArray()
-  wantToLearn?: string[];
+  wantToLearn?: Category[];
   @IsOptional()
   @IsArray()
   favoriteSkills?: Skill[];
