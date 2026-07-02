@@ -1,3 +1,4 @@
+import { Category } from '../../categories/entities/category.entity';
 import { UserGender, UserRole } from '../../users/enums/users.enums';
 
 export class LoginResponseDto {
@@ -13,7 +14,7 @@ export class LoginResponseDto {
     gender: UserGender;
     avatar?: string;
     //skills: string[];
-    wantToLearn: string[];
+    wantToLearn: Category[];
     //favoriteSkills: string[];
     role: UserRole;
   };

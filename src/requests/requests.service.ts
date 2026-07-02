@@ -5,9 +5,9 @@ import { Request } from './entities/request.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { RequestStatus } from './enums/requests.enums';
-import { Skill } from 'src/skills/entities/skill.entity';
-import { User } from 'src/users/entities/user.entity';
-import { UserRole } from 'src/users/enums/users.enums';
+import { Skill } from '../skills/entities/skill.entity';
+import { User } from '../users/entities/user.entity';
+import { UserRole } from '../users/enums/users.enums';
 
 @Injectable()
 export class RequestsService {

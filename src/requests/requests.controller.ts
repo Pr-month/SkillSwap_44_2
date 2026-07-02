@@ -11,9 +11,8 @@ import {
 } from '@nestjs/common';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
-import { UpdateRequestDto } from './dto/update-request.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { RequestWithUser } from 'src/auth/auth.types';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { RequestWithUser } from '../auth/auth.types';
 
 @Controller('requests')
 export class RequestsController {

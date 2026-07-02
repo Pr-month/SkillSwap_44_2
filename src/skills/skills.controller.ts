@@ -14,8 +14,8 @@ import { SkillsService } from './skills.service';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
-import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
-import { RequestWithUser } from 'src/auth/auth.types';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { RequestWithUser } from '../auth/auth.types';
 
 @Controller('skills')
 export class SkillsController {

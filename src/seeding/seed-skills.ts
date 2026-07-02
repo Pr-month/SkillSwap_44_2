@@ -1,12 +1,12 @@
-import { User } from 'src/users/entities/user.entity';
-import { Category } from 'src/categories/entities/category.entity';
-import { Skill } from 'src/skills/entities/skill.entity';
+import { User } from '../users/entities/user.entity';
+import { Category } from '../categories/entities/category.entity';
+import { Skill } from '../skills/entities/skill.entity';
 import { CategoriesData } from './data/category.data';
 import { seedUsers } from './data/users.data';
 import * as bcrypt from 'bcryptjs';
 import { seedSkillsData } from './data/skills.data';
 import { DataSource } from 'typeorm';
-import { dbConfig } from 'src/config/db.config';
+import { dbConfig } from '../config/db.config';
 
 async function seedSkills() {
   const dataSource = new DataSource({
