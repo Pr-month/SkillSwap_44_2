@@ -1,11 +1,11 @@
-﻿{
+{
   "name": "skill-swap",
   "version": "0.0.1",
   "description": "",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
-  "scripts": {         
+  "scripts": {
     "seed:categories": "ts-node --transpile-only -r tsconfig-paths/register src/seeding/seed-categories.ts",
     "seed:users": "ts-node --transpile-only -r tsconfig-paths/register src/seeding/seed-users.ts",
     "seed:admin": "ts-node --transpile-only  -r tsconfig-paths/register src/seeding/seed-admin.ts",
@@ -30,6 +30,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.27",
+    "@nestjs/swagger": "^11.4.5",
     "@nestjs/typeorm": "^11.0.2",
     "@types/bcryptjs": "^2.4.6",
     "bcrypt": "^6.0.0",
