@@ -16,41 +16,58 @@ import { UpdateSkillDto } from './dto/update-skill.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { RequestWithUser } from 'src/auth/auth.types';
+import { ApiTags } from '@nestjs/swagger';
 
+import {
+  ApiCreateSkill,
+  ApiListSkills,
+  ApiGetSkillById,
+  ApiUpdateSkill,
+  ApiDeleteSkill,
+  ApiAddToFavorite,
+  ApiRemoveFromFavorite,
+} from './decorators/skills-swagger.decorators';
+
+@ApiTags('Skills')
 @Controller('skills')
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post()
+  @ApiCreateSkill()
   create(@Req() req: RequestWithUser, @Body() createSkillDto: CreateSkillDto) {
     return this.skillsService.create(req.user.sub, createSkillDto);
   }
 
   @Get()
+  @ApiListSkills()
   findAll(@Query() query: PaginationQueryDto) {
     return this.skillsService.findAll(query);
   }
 
   @Get(':id')
+  @ApiGetSkillById()
   findOne(@Param('id') id: string) {
     return this.skillsService.findOne(id);
   }
 
   @Patch(':id')
+  @ApiUpdateSkill()
   update(@Param('id') id: string, @Body() updateSkillDto: UpdateSkillDto) {
     return this.skillsService.update(id, updateSkillDto);
   }
 
-
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
+  @ApiDeleteSkill()
   async remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     return await this.skillsService.remove(id, req.user.sub);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/favorite')
+  @ApiAddToFavorite()
   async addToFavorite(
     @Param('id') skillId: string,
     @Req() req: RequestWithUser,
@@ -62,6 +79,7 @@ export class SkillsController {
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id/favorite')
+  @ApiRemoveFromFavorite()
   async removeFromFavorite(
     @Param('id') skillId: string,
     @Req() req: RequestWithUser,
