@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCityDto } from './dto/create-city.dto';
 import { UpdateCityDto } from './dto/update-city.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { City } from './entities/city.entity';
-import { FindOptionsWhere, Like, Repository } from 'typeorm';
+import { FindOptionsWhere, Like, QueryFailedError, Repository } from 'typeorm';
 import { CitySearchQuery } from './dto/city-search.query';
 
 @Injectable()
@@ -14,8 +18,26 @@ export class CitiesService {
   ) {}
 
   async create(createCityDto: CreateCityDto): Promise<City> {
-    const city = this.cityRepository.create(createCityDto);
-    return await this.cityRepository.save(city);
+    const city = this.cityRepository.create({
+      name: createCityDto.name,
+      lat: createCityDto.lat,
+      lon: createCityDto.lon,
+      district: createCityDto.district,
+      population: createCityDto.population,
+      subject: createCityDto.subject,
+    });
+
+    try {
+      return await this.cityRepository.save(city);
+    } catch (e) {
+      if (e instanceof QueryFailedError) {
+        const driverError = e.driverError as unknown as { code?: string };
+        if (driverError.code === '23505') {
+          throw new ConflictException('City with this name already exists');
+        }
+      }
+      throw e;
+    }
   }
 
   async findAll(query?: CitySearchQuery): Promise<City[]> {
@@ -32,7 +54,7 @@ export class CitiesService {
     }
 
     return this.cityRepository.find({
-      where,
+      where: Object.keys(where).length ? where : undefined,
       order: { name: 'ASC' },
     });
   }
@@ -44,15 +66,52 @@ export class CitiesService {
   async update(id: string, updateCityDto: UpdateCityDto): Promise<City> {
     const city = await this.findOne(id);
     if (!city) {
-      throw new Error(`City with id ${id} not found`);
+      throw new NotFoundException(`City with id ${id} not found`);
     }
 
-    Object.assign(city, updateCityDto);
+    if (updateCityDto.name !== undefined) city.name = updateCityDto.name;
+    if (updateCityDto.lat !== undefined) city.lat = updateCityDto.lat;
+    if (updateCityDto.lon !== undefined) city.lon = updateCityDto.lon;
+    if (updateCityDto.district !== undefined)
+      city.district = updateCityDto.district;
+    if (updateCityDto.population !== undefined)
+      city.population = updateCityDto.population;
+    if (updateCityDto.subject !== undefined)
+      city.subject = updateCityDto.subject;
 
-    return await this.cityRepository.save(city);
+    try {
+      return await this.cityRepository.save(city);
+    } catch (e) {
+      if (e instanceof QueryFailedError) {
+        const driverError = e.driverError as unknown as { code?: string };
+        if (driverError.code === '23505') {
+          throw new ConflictException(
+            'City name conflict or unique constraint violation',
+          );
+        }
+      }
+      throw e;
+    }
   }
 
-  // remove(id: number) {
-  //   return `This action removes a #${id} city`;
-  // }
+  async remove(id: string): Promise<void> {
+    const city = await this.findOne(id);
+    if (!city) {
+      throw new NotFoundException(`City with id ${id} not found`);
+    }
+
+    try {
+      await this.cityRepository.remove(city);
+    } catch (e) {
+      if (e instanceof QueryFailedError) {
+        const driverError = e.driverError as unknown as { code?: string };
+        if (driverError.code === '23503') {
+          throw new ConflictException(
+            `Cannot delete city with id ${id}: it has related records`,
+          );
+        }
+      }
+      throw e;
+    }
+  }
 }
