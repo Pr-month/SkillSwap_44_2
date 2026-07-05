@@ -39,10 +39,12 @@ export class CitiesController {
     return this.citiesService.findOne(id);
   }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateCityDto: UpdateCityDto) {
-  //   return this.citiesService.update(+id, updateCityDto);
-  // }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles([UserRole.ADMIN])
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateCityDto: UpdateCityDto) {
+    return this.citiesService.update(id, updateCityDto);
+  }
 
   // @Delete(':id')
   // remove(@Param('id') id: string) {

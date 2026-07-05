@@ -41,9 +41,16 @@ export class CitiesService {
     return this.cityRepository.findOne({ where: { id } });
   }
 
-  // update(id: number, updateCityDto: UpdateCityDto) {
-  //   return `This action updates a #${id} city`;
-  // }
+  async update(id: string, updateCityDto: UpdateCityDto): Promise<City> {
+    const city = await this.findOne(id);
+    if (!city) {
+      throw new Error(`City with id ${id} not found`);
+    }
+
+    Object.assign(city, updateCityDto);
+
+    return await this.cityRepository.save(city);
+  }
 
   // remove(id: number) {
   //   return `This action removes a #${id} city`;
