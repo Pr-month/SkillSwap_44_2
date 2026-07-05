@@ -13,9 +13,10 @@ export class CitiesService {
     private readonly cityRepository: Repository<City>,
   ) {}
 
-  // create(createCityDto: CreateCityDto) {
-  //   return 'This action adds a new city';
-  // }
+  async create(createCityDto: CreateCityDto): Promise<City> {
+    const city = this.cityRepository.create(createCityDto);
+    return await this.cityRepository.save(city);
+  }
 
   async findAll(query?: CitySearchQuery): Promise<City[]> {
     const where: FindOptionsWhere<City> = {};
