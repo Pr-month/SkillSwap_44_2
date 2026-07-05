@@ -209,11 +209,7 @@ export function ApiSimilarSkills() {
     ApiOperation({
       summary: 'Получить похожих пользователей по категории навыка',
     }),
-    ApiParam({
-      name: 'id',
-      description: 'UUID навыка',
-      example: 'skill-123',
-    }),
+    ApiParam({ name: 'id', description: 'UUID навыка', example: 'skill-123' }),
     ApiResponse({
       status: 200,
       description: 'Список похожих пользователей получен',
@@ -221,20 +217,17 @@ export function ApiSimilarSkills() {
         example: [
           {
             id: 'user-1',
-            username: 'alice',
-            display_name: 'Alice Smith',
+            name: 'Alice Smith',
+            city: 'Moscow',
             avatar: '/uploads/alice.jpg',
-            specialization_id: 5,
-            specialization_name: 'Web Development',
-            level: 'PRO',
-            workload_hours_per_week: 30,
-            work_format: 'REMOTE',
-            employment_type: 'FULL_TIME',
+            // остальные поля User (about, birthdate, gender, role и т.п.)
             skills: [
               {
                 id: 'skill-456',
                 title: 'React',
                 description: 'Strong experience with React ecosystem',
+                images: ['/uploads/react.jpg'],
+                // owner и category будут вложенными объектами
               },
             ],
           },
