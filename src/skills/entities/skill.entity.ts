@@ -1,3 +1,4 @@
+import { Category } from '../../categories/entities/category.entity';
 import { User } from '../../users/entities/user.entity';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
@@ -18,7 +19,6 @@ export class Skill {
   @ManyToOne(() => User, (user) => user.skills)
   owner: User;
 
-  //TODO: заменить на связь @ManyToOne(() => Category), когда появится Category entity
-  @Column({ nullable: true })
-  categoryId: string;
+  @ManyToOne(() => Category, { nullable: true })
+  category: Category;
 }

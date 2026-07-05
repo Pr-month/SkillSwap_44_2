@@ -9,7 +9,6 @@ import {
 } from '@nestjs/swagger';
 import { CreateSkillDto } from '../dto/create-skill.dto';
 import { UpdateSkillDto } from '../dto/update-skill.dto';
-import { PaginationQueryDto } from '../dto/pagination-query.dto';
 import { SWAGGER_AUTH_SCHEME_NAME } from '../../config/swagger.config';
 
 export function ApiCreateSkill() {
@@ -29,7 +28,10 @@ export function ApiCreateSkill() {
         },
       },
     }),
-    ApiResponse({ status: 400, description: 'Некорректные данные в теле запроса' }),
+    ApiResponse({
+      status: 400,
+      description: 'Некорректные данные в теле запроса',
+    }),
     ApiResponse({ status: 401, description: 'Неавторизованный запрос' }),
   );
 }
@@ -125,7 +127,10 @@ export function ApiUpdateSkill() {
         },
       },
     }),
-    ApiResponse({ status: 400, description: 'Некорректные данные в теле запроса' }),
+    ApiResponse({
+      status: 400,
+      description: 'Некорректные данные в теле запроса',
+    }),
     ApiResponse({ status: 404, description: 'Навык не найден' }),
   );
 }
@@ -152,7 +157,10 @@ export function ApiDeleteSkill() {
       },
     }),
     ApiResponse({ status: 401, description: 'Неавторизованный запрос' }),
-    ApiResponse({ status: 403, description: 'Пользователь не является владельцем навыка' }),
+    ApiResponse({
+      status: 403,
+      description: 'Пользователь не является владельцем навыка',
+    }),
     ApiResponse({ status: 404, description: 'Навык не найден' }),
   );
 }
@@ -193,5 +201,46 @@ export function ApiRemoveFromFavorite() {
     }),
     ApiResponse({ status: 401, description: 'Неавторизованный запрос' }),
     ApiResponse({ status: 404, description: 'Навык не был в избранном' }),
+  );
+}
+
+export function ApiSimilarSkills() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Получить похожих пользователей по категории навыка',
+    }),
+    ApiParam({
+      name: 'id',
+      description: 'UUID навыка',
+      example: 'skill-123',
+    }),
+    ApiResponse({
+      status: 200,
+      description: 'Список похожих пользователей получен',
+      schema: {
+        example: [
+          {
+            id: 'user-1',
+            username: 'alice',
+            display_name: 'Alice Smith',
+            avatar: '/uploads/alice.jpg',
+            specialization_id: 5,
+            specialization_name: 'Web Development',
+            level: 'PRO',
+            workload_hours_per_week: 30,
+            work_format: 'REMOTE',
+            employment_type: 'FULL_TIME',
+            skills: [
+              {
+                id: 'skill-456',
+                title: 'React',
+                description: 'Strong experience with React ecosystem',
+              },
+            ],
+          },
+        ],
+      },
+    }),
+    ApiResponse({ status: 404, description: 'Навык не найден' }),
   );
 }

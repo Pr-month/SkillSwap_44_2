@@ -26,6 +26,7 @@ import {
   ApiDeleteSkill,
   ApiAddToFavorite,
   ApiRemoveFromFavorite,
+  ApiSimilarSkills,
 } from './decorators/skills-swagger.decorators';
 
 @ApiTags('Skills')
@@ -87,5 +88,11 @@ export class SkillsController {
     const userId = req.user.sub;
     await this.skillsService.removeFromFavorite(userId, skillId);
     return { message: 'Skill removed from favorites' };
+  }
+
+  @Get(':id/similar')
+  @ApiSimilarSkills()
+  async findSimilar(@Param('id') id: string) {
+    return this.skillsService.findSimilar(id);
   }
 }
