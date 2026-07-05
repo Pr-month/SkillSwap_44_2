@@ -15,7 +15,6 @@ async function seedSkills() {
   });
 
   await dataSource.initialize();
-  await dataSource.synchronize(true);
 
   const userRepo = dataSource.getRepository(User);
   const categoryRepo = dataSource.getRepository(Category);
@@ -23,92 +22,62 @@ async function seedSkills() {
 
   const userCount = await userRepo.count();
   const categoryCount = await categoryRepo.count();
-  const skillCount = await skillRepo.count();
 
-  if (userCount > 0) {
-    return;
+  if (userCount === 0) {
+    console.error('Пользователей нет, нужно запустить seed:users');
+    await dataSource.destroy();
+    process.exit(1);
   }
 
-  if (categoryCount > 0) {
-    return;
+  if (categoryCount === 0) {
+    console.error('Категорий нет, нужно запустить seed:categories');
+    await dataSource.destroy();
+    process.exit(1);
   }
 
-  if (skillCount > 0) {
-    return;
-  }
-  // создание категорий
-  for (const parentData of CategoriesData) {
-    const parent = categoryRepo.create({
-      name: parentData.name,
-    });
-    await categoryRepo.save(parent);
+  const categories = await categoryRepo.find();
+  const users = await userRepo.find();
 
-    for (const childName of parentData.children) {
-      const child = categoryRepo.create({
-        name: childName,
-        parent: parent,
-      });
-      await categoryRepo.save(child);
-    }
-  }
-  // для поиска
-  const allCategories = await categoryRepo.find();
-
-  // создание пользователей
-  for (const userData of seedUsers) {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-
-    const resolvedCategories: Category[] = [];
-    for (const name of userData.wantToLearn) {
-      const cat = allCategories.find((c) => c.name === name);
-      if (cat) resolvedCategories.push(cat);
-    }
-
-    const user = userRepo.create({
-      name: userData.name,
-      email: userData.email,
-      password: hashedPassword,
-      about: userData.about,
-      birthdate: userData.birthdate,
-      city: userData.city,
-      gender: userData.gender,
-      role: userData.role,
-      wantToLearn: resolvedCategories,
-    });
-    await userRepo.save(user);
-  }
-  // для поиска
-  const allUsers = await userRepo.find();
-
-  //создание навыков
-
-  for (const entry of seedSkillsData) {
-    const user = allUsers.find((u) => u.email === entry.userEmail);
+  for (const userSkills of seedSkillsData) {
+    const user = users.find((u) => u.email === userSkills.userEmail);
     if (!user) {
       continue;
     }
-
-    for (const skillInfo of entry.skills) {
-      const category = allCategories.find(
-        (c) => c.name === skillInfo.categoryName,
+    for (const skillData of userSkills.skills) {
+      const category = categories.find(
+        (c) => c.name === skillData.categoryName,
       );
       if (!category) {
         continue;
       }
 
-      const skill = skillRepo.create({
-        title: skillInfo.title,
-        description: skillInfo.description,
-        images: skillInfo.images || [],
+      const foundSkill = await skillRepo.findOne({
+        where: {
+          owner: { id: user.id },
+          title: skillData.title,
+          categoryId: category.id,
+        },
+      });
+
+      if (foundSkill) {
+        continue;
+      }
+
+      const newSkill = skillRepo.create({
+        title: skillData.title,
+        description: skillData.description,
+        images: skillData.images || [],
         owner: user,
         categoryId: category.id,
       });
-      await skillRepo.save(skill);
+      await skillRepo.save(newSkill);
     }
   }
+
+  await dataSource.destroy();
 }
 
 seedSkills().catch((err) => {
   console.error(err);
   process.exit(1);
-})
+});
