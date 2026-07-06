@@ -8,13 +8,6 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -23,21 +16,21 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/enums/users.enums';
 import { Category } from './entities/category.entity';
+import {
+  ApiCategoriesController,
+  ApiCategoriesDelete,
+  ApiCategoriesGetAll,
+  ApiCategoriesGetOne,
+  ApiCategoriesPatch,
+  ApiCategoriesPost,
+} from './categories.swagger';
 
-@ApiTags('categories')
+@ApiCategoriesController()
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Создать категорию' })
-  @ApiResponse({
-    status: 201,
-    description: 'Категория успешно создана',
-    type: Category,
-  })
-  @ApiResponse({ status: 401, description: 'Пользователь не авторизован' })
-  @ApiResponse({ status: 403, description: 'Недостаточно прав' })
+  @ApiCategoriesPost()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([UserRole.ADMIN])
   @Post()
@@ -45,43 +38,19 @@ export class CategoriesController {
     return this.categoriesService.create(createCategoryDto);
   }
 
-  @ApiOperation({
-    summary: 'Получить список основных категорий с подкатегориями',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Список категорий успешно получен',
-    type: [Category],
-  })
+  @ApiCategoriesGetAll()
   @Get()
   findAll(): Promise<Category[]> {
     return this.categoriesService.findAll();
   }
 
-  @ApiOperation({ summary: 'Получить категорию по id' })
-  @ApiParam({ name: 'id', description: 'UUID категории' })
-  @ApiResponse({
-    status: 200,
-    description: 'Категория успешно найдена',
-    type: Category,
-  })
-  @ApiResponse({ status: 404, description: 'Категория не найдена' })
+  @ApiCategoriesGetOne()
   @Get(':id')
   findOne(@Param('id') id: string): Promise<Category> {
     return this.categoriesService.findOne(id);
   }
 
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Обновить категорию' })
-  @ApiParam({ name: 'id', description: 'UUID категории' })
-  @ApiResponse({
-    status: 200,
-    description: 'Категория успешно обновлена',
-    type: Category,
-  })
-  @ApiResponse({ status: 401, description: 'Пользователь не авторизован' })
-  @ApiResponse({ status: 403, description: 'Недостаточно прав' })
-  @ApiResponse({ status: 404, description: 'Категория не найдена' })
+  @ApiCategoriesPatch()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([UserRole.ADMIN])
   @Patch(':id')
@@ -92,13 +61,7 @@ export class CategoriesController {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Удалить категорию' })
-  @ApiParam({ name: 'id', description: 'UUID категории' })
-  @ApiResponse({ status: 200, description: 'Категория успешно удалена' })
-  @ApiResponse({ status: 401, description: 'Пользователь не авторизован' })
-  @ApiResponse({ status: 403, description: 'Недостаточно прав' })
-  @ApiResponse({ status: 404, description: 'Категория не найдена' })
+  @ApiCategoriesDelete()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles([UserRole.ADMIN])
   @Delete(':id')

@@ -6,50 +6,16 @@ import {
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
-import {
-  ApiBody,
-  ApiConsumes,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
 import { FilesService } from './files.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiFilesController, ApiFilesUpload } from './files.swagger';
 
-@ApiTags('files')
+@ApiFilesController()
 @Controller('files')
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
-  @ApiOperation({ summary: 'Загрузить изображение на сервер' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Изображение размером до 2 МБ',
-        },
-      },
-      required: ['file'],
-    },
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Файл успешно загружен',
-    schema: {
-      example: {
-        message: 'File uploaded successfully',
-        filename: 'image-123456.png',
-        publicUrl: '/uploads/image-123456.png',
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Файл не передан' })
-  @ApiResponse({ status: 413, description: 'Размер файла превышает 2 МБ' })
-  @ApiResponse({ status: 415, description: 'Разрешены только изображения' })
+  @ApiFilesUpload()
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   uploadFile(@UploadedFile() file: Express.Multer.File) {
