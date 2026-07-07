@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import { seedUsers } from './data/users.data';
 import { dbConfig } from '../config/db.config';
-import { Skill } from 'src/skills/entities/skill.entity';
+import { Skill } from '../skills/entities/skill.entity';
 
 dotenv.config();
 

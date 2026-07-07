@@ -5,43 +5,45 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { jwtConfig, TJwtConfig } from '../config/jwt.config';
 import { JwtPayload } from '../auth/auth.types';
+import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
+
+interface ClientData {
+  userId?: string;
+}
 
 @WebSocketGateway({ cors: true })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
-  constructor(
-    private readonly jwtService: JwtService,
-    @Inject(jwtConfig.KEY)
-    private readonly jwtConfig: TJwtConfig,
-  ) { }
+  constructor(private readonly wsJwtGuard: WsJwtGuard) {}
 
   async handleConnection(client: Socket) {
+    const token = client.handshake.query?.token as string | undefined;
+    let payload: JwtPayload;
+
     try {
-      const token = client.handshake.query.token as string;
-      if (!token) {
-        throw new UnauthorizedException('No token provided');
-      }
-      const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
-        secret: this.jwtConfig.accessSecret,
-      });
-      client.join(payload.sub);
-      client.data.userId = payload.sub;
-    } catch {
-      client.disconnect();
+      payload = await this.wsJwtGuard.verify(token);
+    } catch (_e) {
+      client.disconnect(true);
+      return;
     }
+
+    const data = (client.data ?? {}) as ClientData;
+    data.userId = payload.sub;
+    client.data = data;
+
+    client.join(payload.sub);
   }
 
-  handleDisconnect(client: Socket) {
+  handleDisconnect(_client: Socket) {
     // освобождаем ресурсы при необходимости
   }
 
-  notifyUser(userId: string, payload: any) {
-    this.server.to(userId).emit('notification', payload);
+  notifyUser(userId: string, payload: unknown) {
+    void this.server.to(userId).emit('notification', payload);
   }
 }

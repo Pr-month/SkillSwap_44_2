@@ -1,4 +1,3 @@
-// src/seeding/seed-categories.ts
 import { DataSource } from 'typeorm';
 import { Category } from '../categories/entities/category.entity';
 import { CategoriesData } from './data/category.data';

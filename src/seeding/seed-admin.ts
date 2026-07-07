@@ -4,8 +4,8 @@ import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import { UserGender, UserRole } from '../users/enums/users.enums';
 import { dbConfig } from '../config/db.config';
-import { Skill } from 'src/skills/entities/skill.entity';
-import { Category } from 'src/categories/entities/category.entity';
+import { Skill } from '../skills/entities/skill.entity';
+import { Category } from '../categories/entities/category.entity';
 
 dotenv.config();
 
