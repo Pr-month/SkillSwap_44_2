@@ -26,13 +26,14 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   app.useGlobalFilters(new AllExceptionsFilter());
 
   const configBuilder = new DocumentBuilder()
     .setTitle('API проекта Skill Swap')
     .setDescription('Документация API для управления навыками, пользователями и избранным')
-    .setVersion('1.0')    
+    .setVersion('1.0')
     .addBearerAuth(
       {
         type: 'http',
@@ -52,4 +53,4 @@ async function bootstrap() {
   console.log(`Swagger UI available at http://localhost:${config.port}/api`);
 }
 
-bootstrap();
+void bootstrap();

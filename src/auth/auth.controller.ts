@@ -7,16 +7,26 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { Response } from 'express';
 import ms from 'ms';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import {
+  ApiAuthController,
+  ApiAuthLogin,
+  ApiAuthLogout,
+  ApiAuthRefresh,
+  ApiAuthRegister,
+} from './auth.swagger';
 
+@ApiAuthController()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @ApiAuthRegister()
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto): Promise<User> {
     return this.authService.register(createUserDto);
   }
 
+  @ApiAuthLogin()
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
@@ -39,11 +49,13 @@ export class AuthController {
     return responseWithoutRefreshToken;
   }
 
+  @ApiAuthLogout()
   @Post('logout/:id')
   async logout(@Param('id') id: string) {
     return this.authService.logout(id);
   }
 
+  @ApiAuthRefresh()
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refresh(dto.refreshToken);
