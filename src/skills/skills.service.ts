@@ -6,7 +6,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { Skill } from './entities/skill.entity';
@@ -19,14 +19,20 @@ export class SkillsService {
     private readonly skillsRepository: Repository<Skill>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
-  create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
+  async create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
+    const owner = await this.usersRepository.findOneBy({ id: userId });
+    if (!owner) {
+      throw new NotFoundException('User not found');
+    }
+
     const skill = this.skillsRepository.create({
       title: createSkillDto.title,
-      description: createSkillDto.description || '', // не знаю обязательное ли это поле
+      description: createSkillDto.description || '',
       images: createSkillDto.images,
-      owner: { id: userId },
+      owner,
     });
 
     return this.skillsRepository.save(skill);
@@ -99,14 +105,14 @@ export class SkillsService {
 
   async addToFavorite(userId: string, skillId: string): Promise<void> {
     const skill = await this.skillsRepository.findOne({
-      where: { id: skillId } as FindOptionsWhere<Skill>,
+      where: { id: skillId },
     });
     if (!skill) {
       throw new NotFoundException(`Skill #${skillId} not found`);
     }
 
     const user = await this.usersRepository.findOne({
-      where: { id: userId } as FindOptionsWhere<User>,
+      where: { id: userId },
       relations: { favoriteSkills: true },
     });
 
@@ -151,7 +157,7 @@ export class SkillsService {
 
   async removeFromFavorite(userId: string, skillId: string): Promise<void> {
     const user = await this.usersRepository.findOne({
-      where: { id: userId } as FindOptionsWhere<User>,
+      where: { id: userId },
       relations: { favoriteSkills: true },
     });
 
@@ -166,5 +172,30 @@ export class SkillsService {
 
     user.favoriteSkills.splice(index, 1);
     await this.usersRepository.save(user);
+  }
+
+  async findSimilar(skillId: string): Promise<User[]> {
+    const skill = await this.skillsRepository.findOne({
+      where: { id: skillId },
+      relations: { category: true },
+    });
+
+    if (!skill || !skill.category) {
+      return [];
+    }
+
+    const categoryId = skill.category.id;
+
+    const users = await this.usersRepository.find({
+      relations: { skills: true },
+      where: {
+        skills: {
+          category: { id: categoryId },
+        },
+      },
+      take: 10,
+    });
+
+    return users;
   }
 }

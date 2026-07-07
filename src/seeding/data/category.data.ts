@@ -1,4 +1,3 @@
-// src/seeding/data/category.data.ts
 export const CategoriesData = [
   {
     name: 'Творчество и искусство',

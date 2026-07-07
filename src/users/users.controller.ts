@@ -4,38 +4,49 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { RequestWithUser } from '../auth/auth.types';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
+import {
+  ApiUsersController,
+  ApiUsersGetAll,
+  ApiUsersGetMe,
+  ApiUsersGetOne,
+  ApiUsersPatchMe,
+  ApiUsersPatchPassword,
+} from './users.swagger';
 
+@ApiUsersController()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiUsersGetAll()
   @Get()
   findAll(): Promise<User[]> {
     return this.usersService.findAll();
   }
 
+  @ApiUsersGetMe()
   @UseGuards(JwtAuthGuard)
   @Get('me')
   getMe(@Req() req: RequestWithUser): Promise<User> {
     return this.usersService.findOne(req.user.sub);
   }
 
+  @ApiUsersGetOne()
   @Get(':id')
   findOne(@Param('id') id: string): Promise<User> {
     return this.usersService.findOne(id);
   }
 
+  @ApiUsersPatchMe()
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   updateMe(
@@ -45,6 +56,7 @@ export class UsersController {
     return this.usersService.update(req.user.sub, updateUserDto);
   }
 
+  @ApiUsersPatchPassword()
   @UseGuards(JwtAuthGuard)
   @Patch('me/password')
   async updatePassword(
