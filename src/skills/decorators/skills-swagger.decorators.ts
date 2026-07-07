@@ -9,7 +9,6 @@ import {
 } from '@nestjs/swagger';
 import { CreateSkillDto } from '../dto/create-skill.dto';
 import { UpdateSkillDto } from '../dto/update-skill.dto';
-import { PaginationQueryDto } from '../dto/pagination-query.dto';
 import { SWAGGER_AUTH_SCHEME_NAME } from '../../config/swagger.config';
 
 export function ApiCreateSkill() {
@@ -29,7 +28,10 @@ export function ApiCreateSkill() {
         },
       },
     }),
-    ApiResponse({ status: 400, description: 'Некорректные данные в теле запроса' }),
+    ApiResponse({
+      status: 400,
+      description: 'Некорректные данные в теле запроса',
+    }),
     ApiResponse({ status: 401, description: 'Неавторизованный запрос' }),
   );
 }
@@ -125,7 +127,10 @@ export function ApiUpdateSkill() {
         },
       },
     }),
-    ApiResponse({ status: 400, description: 'Некорректные данные в теле запроса' }),
+    ApiResponse({
+      status: 400,
+      description: 'Некорректные данные в теле запроса',
+    }),
     ApiResponse({ status: 404, description: 'Навык не найден' }),
   );
 }
@@ -152,7 +157,10 @@ export function ApiDeleteSkill() {
       },
     }),
     ApiResponse({ status: 401, description: 'Неавторизованный запрос' }),
-    ApiResponse({ status: 403, description: 'Пользователь не является владельцем навыка' }),
+    ApiResponse({
+      status: 403,
+      description: 'Пользователь не является владельцем навыка',
+    }),
     ApiResponse({ status: 404, description: 'Навык не найден' }),
   );
 }
@@ -193,5 +201,39 @@ export function ApiRemoveFromFavorite() {
     }),
     ApiResponse({ status: 401, description: 'Неавторизованный запрос' }),
     ApiResponse({ status: 404, description: 'Навык не был в избранном' }),
+  );
+}
+
+export function ApiSimilarSkills() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Получить похожих пользователей по категории навыка',
+    }),
+    ApiParam({ name: 'id', description: 'UUID навыка', example: 'skill-123' }),
+    ApiResponse({
+      status: 200,
+      description: 'Список похожих пользователей получен',
+      schema: {
+        example: [
+          {
+            id: 'user-1',
+            name: 'Alice Smith',
+            city: 'Moscow',
+            avatar: '/uploads/alice.jpg',
+            // остальные поля User (about, birthdate, gender, role и т.п.)
+            skills: [
+              {
+                id: 'skill-456',
+                title: 'React',
+                description: 'Strong experience with React ecosystem',
+                images: ['/uploads/react.jpg'],
+                // owner и category будут вложенными объектами
+              },
+            ],
+          },
+        ],
+      },
+    }),
+    ApiResponse({ status: 404, description: 'Навык не найден' }),
   );
 }

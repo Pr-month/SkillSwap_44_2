@@ -1,3 +1,4 @@
+import { Category } from '../../categories/entities/category.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
@@ -24,7 +25,6 @@ export class Skill {
   @ManyToOne(() => User, (user) => user.skills)
   owner: User;
 
-  @ApiPropertyOptional({ example: '9b7c1d2e-3f4a-4b5c-8d9e-123456789abc' })
-  @Column({ nullable: true })
-  categoryId: string;
+  @ManyToOne(() => Category, { nullable: true })
+  category: Category;
 }
