@@ -55,7 +55,7 @@ async function seedSkills() {
         where: {
           owner: { id: user.id },
           title: skillData.title,
-          categoryId: category.id,
+          category: {id: category.id},
         },
       });
 
@@ -68,7 +68,7 @@ async function seedSkills() {
         description: skillData.description,
         images: skillData.images || [],
         owner: user,
-        categoryId: category.id,
+        category: category,
       });
       await skillRepo.save(newSkill);
     }
