@@ -1,5 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException, BadRequestException,
-  ConflictException, } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { Request } from './entities/request.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -8,6 +13,7 @@ import { RequestStatus } from './enums/requests.enums';
 import { Skill } from '../skills/entities/skill.entity';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/enums/users.enums';
+import { NotificationsGateway } from '../notifications/notifications.gateway';
 
 @Injectable()
 export class RequestsService {
@@ -18,15 +24,17 @@ export class RequestsService {
     private readonly skillsRepository: Repository<Skill>,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
+  // ---- вспомогательные методы ----
   private async getRequestForReceiver(
     requestId: string,
     userId: string,
   ): Promise<Request> {
     const request = await this.requestsRepository.findOne({
       where: { id: requestId },
-      relations: { receiver: true },
+      relations: { receiver: true, sender: true, offeredSkill: true, requestedSkill: true },
     });
 
     if (!request) {
@@ -48,12 +56,11 @@ export class RequestsService {
     }
   }
 
+  // ---- публичные методы для получения заявок ----
   findIncoming(userId: string): Promise<Request[]> {
     return this.requestsRepository.find({
       where: {
-        receiver: {
-          id: userId,
-        },
+        receiver: { id: userId },
         status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
       },
       relations: {
@@ -62,18 +69,14 @@ export class RequestsService {
         offeredSkill: true,
         requestedSkill: true,
       },
-      order: {
-        createdAt: 'DESC',
-      },
+      order: { createdAt: 'DESC' },
     });
   }
 
   findOutgoing(userId: string): Promise<Request[]> {
     return this.requestsRepository.find({
       where: {
-        sender: {
-          id: userId,
-        },
+        sender: { id: userId },
         status: In([RequestStatus.PENDING, RequestStatus.IN_PROGRESS]),
       },
       relations: {
@@ -82,12 +85,11 @@ export class RequestsService {
         offeredSkill: true,
         requestedSkill: true,
       },
-      order: {
-        createdAt: 'DESC',
-      },
+      order: { createdAt: 'DESC' },
     });
   }
 
+  // ---- CREATE с уведомлением ----
   async create(
     createRequestDto: CreateRequestDto,
     senderId: string,
@@ -100,14 +102,10 @@ export class RequestsService {
     ]);
 
     if (!offeredSkill) {
-      throw new NotFoundException(
-        `Offered skill with id ${offeredSkillId} not found`,
-      );
+      throw new NotFoundException(`Offered skill with id ${offeredSkillId} not found`);
     }
     if (!requestedSkill) {
-      throw new NotFoundException(
-        `Requested skill with id ${requestedSkillId} not found`,
-      );
+      throw new NotFoundException(`Requested skill with id ${requestedSkillId} not found`);
     }
 
     const receiverCandidate = requestedSkill.owner;
@@ -116,7 +114,6 @@ export class RequestsService {
     }
 
     let receiverUser: User | null;
-
     if (typeof receiverCandidate === 'string') {
       receiverUser = await this.usersRepository.findOne({
         where: { id: receiverCandidate },
@@ -148,37 +145,113 @@ export class RequestsService {
       isRead: false,
     });
 
-    return this.requestsRepository.save(newRequest);
+    const savedRequest = await this.requestsRepository.save(newRequest);
+
+    // Уведомление получателю
+    this.notificationsGateway.notifyUser(receiverUser.id, {
+      type: 'new_request',
+      message: `Новая заявка от ${senderUser.name}`,
+      senderName: senderUser.name,
+      skillTitle: offeredSkill.title,
+      requestId: savedRequest.id,
+    });
+
+    return savedRequest;
   }
 
+  // ---- ACCEPT с обменом навыками и уведомлением ----
+  async acceptRequest(requestId: string, userId: string): Promise<Request> {
+    const request = await this.requestsRepository.findOne({
+      where: { id: requestId },
+      relations: {
+        sender: true,
+        receiver: true,
+        offeredSkill: true,
+        requestedSkill: true,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException(`Request with id ${requestId} not found`);
+    }
+    if (!request.receiver || request.receiver.id !== userId) {
+      throw new ConflictException('Only the receiver can accept this request');
+    }
+    this.assertNotFinalStatus(request.status);
+
+    // Загружаем полные данные пользователей с их навыками
+    const [sender, receiver] = await Promise.all([
+      this.usersRepository.findOne({
+        where: { id: request.sender.id },
+        relations: ['skills'],
+      }),
+      this.usersRepository.findOne({
+        where: { id: request.receiver.id },
+        relations: ['skills'],
+      }),
+    ]);
+
+    if (!sender || !receiver) {
+      throw new NotFoundException('Sender or receiver not found');
+    }
+
+    const offeredSkill = request.offeredSkill;
+    const requestedSkill = request.requestedSkill;
+
+    // Обмен навыками
+    if (!sender.skills.some(s => s.id === requestedSkill.id)) {
+      sender.skills.push(requestedSkill);
+    }
+    if (!receiver.skills.some(s => s.id === offeredSkill.id)) {
+      receiver.skills.push(offeredSkill);
+    }
+
+    await this.usersRepository.save([sender, receiver]);
+
+    // Обновляем статус заявки
+    request.status = RequestStatus.ACCEPTED;
+    const updatedRequest = await this.requestsRepository.save(request);
+
+    // Уведомление отправителю
+    this.notificationsGateway.notifyUser(sender.id, {
+      type: 'request_accepted',
+      message: `Ваша заявка на навык "${offeredSkill.title}" принята`,
+      skillTitle: offeredSkill.title,
+      requestId: updatedRequest.id,
+    });
+
+    return updatedRequest;
+  }
+
+  // ---- REJECT с уведомлением ----
+  async rejectRequest(requestId: string, userId: string): Promise<Request> {
+    const request = await this.getRequestForReceiver(requestId, userId);
+    this.assertNotFinalStatus(request.status);
+
+    request.status = RequestStatus.REJECTED;
+    const updatedRequest = await this.requestsRepository.save(request);
+
+    this.notificationsGateway.notifyUser(request.sender.id, {
+      type: 'request_rejected',
+      message: `Ваша заявка на навык "${request.offeredSkill.title}" отклонена`,
+      skillTitle: request.offeredSkill.title,
+      requestId: updatedRequest.id,
+    });
+
+    return updatedRequest;
+  }
+
+  // ---- остальные методы (markAsRead, remove) ----
   async markAsRead(requestId: string, userId: string): Promise<Request> {
     const request = await this.getRequestForReceiver(requestId, userId);
     request.isRead = true;
     return this.requestsRepository.save(request);
   }
 
-  async acceptRequest(requestId: string, userId: string): Promise<Request> {
-    const request = await this.getRequestForReceiver(requestId, userId);
-    this.assertNotFinalStatus(request.status);
-    request.status = RequestStatus.ACCEPTED;
-    return this.requestsRepository.save(request);
-  }
-
-  async rejectRequest(requestId: string, userId: string): Promise<Request> {
-    const request = await this.getRequestForReceiver(requestId, userId);
-    this.assertNotFinalStatus(request.status);
-    request.status = RequestStatus.REJECTED;
-    return this.requestsRepository.save(request);
-  }
-
   async remove(id: string, userId: string, role: UserRole): Promise<Request> {
     const request = await this.requestsRepository.findOne({
-      where: {
-        id,
-      },
-      relations: {
-        sender: true,
-      },
+      where: { id },
+      relations: { sender: true },
     });
 
     if (!request) {
@@ -190,19 +263,6 @@ export class RequestsService {
     }
 
     await this.requestsRepository.remove(request);
-
     return request;
   }
-
-  // findAll() {
-  //   return `This action returns all requests`;
-  // }
-
-  // findOne(id: number) {
-  //   return `This action returns a #${id} request`;
-  // }
-
-  // remove(id: number) {
-  //   return `This action removes a #${id} request`;
-  // }
 }
