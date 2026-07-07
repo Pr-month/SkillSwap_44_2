@@ -10,7 +10,7 @@ import { User } from '../users/entities/user.entity';
 import bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
-import { jwtConfig, TJwtConfig } from 'src/config/jwt.config';
+import { jwtConfig, TJwtConfig } from '../config/jwt.config';
 import { LoginServiceResponseDto } from './dto/login-service-response.dto';
 import { JwtPayload } from './auth.types';
 
