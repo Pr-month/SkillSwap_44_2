@@ -9,7 +9,7 @@ import {
 import { Exclude } from 'class-transformer';
 import { UserGender, UserRole } from '../enums/users.enums';
 import { Skill } from '../../skills/entities/skill.entity';
-import { Category } from 'src/categories/entities/category.entity';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity('users')
 export class User {

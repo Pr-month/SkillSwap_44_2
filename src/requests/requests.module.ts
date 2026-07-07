@@ -5,12 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Request } from './entities/request.entity';
 import { Skill } from '../skills/entities/skill.entity';
 import { User } from '../users/entities/user.entity';
-import { NotificationsModule } from '../notifications/notifications.module'; // добавить
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Request, Skill, User]),
-    NotificationsModule, // добавить
+    NotificationsModule,
   ],
   controllers: [RequestsController],
   providers: [RequestsService],

@@ -5,7 +5,7 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { appConfig, AppConfig } from './config/app.config';
 import { AllExceptionsFilter } from './common/all-exception.filter';
 import * as express from 'express';
-import path from 'path';
+import * as path from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { SWAGGER_AUTH_SCHEME_NAME } from './config/swagger.config';
 
