@@ -1,14 +1,11 @@
 import { User } from '../users/entities/user.entity';
 import { Category } from '../categories/entities/category.entity';
 import { Skill } from '../skills/entities/skill.entity';
-import { CategoriesData } from './data/category.data';
-import { seedUsers } from './data/users.data';
-import * as bcrypt from 'bcryptjs';
 import { seedSkillsData } from './data/skills.data';
 import { DataSource } from 'typeorm';
 import { dbConfig } from '../config/db.config';
 
-async function seedSkills() {
+export async function seedSkills() {
   const dataSource = new DataSource({
     ...dbConfig(),
     entities: [Category, User, Skill],
@@ -55,7 +52,7 @@ async function seedSkills() {
         where: {
           owner: { id: user.id },
           title: skillData.title,
-          category: {id: category.id},
+          category: { id: category.id },
         },
       });
 
@@ -77,7 +74,9 @@ async function seedSkills() {
   await dataSource.destroy();
 }
 
-seedSkills().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seedSkills().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

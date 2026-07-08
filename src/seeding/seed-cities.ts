@@ -6,7 +6,7 @@ import { dbConfig } from '../config/db.config';
 
 dotenv.config();
 
-async function seedCitiesFn() {
+export async function seedCitiesFn() {
   const dataSource = new DataSource({
     ...dbConfig(),
     entities: [City],
@@ -40,7 +40,9 @@ async function seedCitiesFn() {
   await dataSource.destroy();
 }
 
-seedCitiesFn().catch((err) => {
-  console.error('Ошибка при сидинге городов:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seedCitiesFn().catch((err) => {
+    console.error('Ошибка при сидинге городов:', err);
+    process.exit(1);
+  });
+}
