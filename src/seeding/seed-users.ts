@@ -5,16 +5,16 @@ import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import { seedUsers } from './data/users.data';
 import { dbConfig } from '../config/db.config';
-import { Skill } from 'src/skills/entities/skill.entity';
+import { Skill } from '../skills/entities/skill.entity';
 
 dotenv.config();
 
-const dataSource = new DataSource({
-  ...dbConfig(),
-  entities: [User, Skill, Category],
-});
+export async function seedUsersFn() {
+  const dataSource = new DataSource({
+    ...dbConfig(),
+    entities: [User, Skill, Category],
+  });
 
-async function seedUsersFn() {
   await dataSource.initialize();
 
   const userRepo = dataSource.getRepository(User);
@@ -66,7 +66,9 @@ async function seedUsersFn() {
   await dataSource.destroy();
 }
 
-seedUsersFn().catch((err) => {
-  console.error('Ошибка при сидинге пользователей:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seedUsersFn().catch((err) => {
+    console.error('Ошибка при сидинге пользователей:', err);
+    process.exit(1);
+  });
+}

@@ -4,17 +4,17 @@ import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import { UserGender, UserRole } from '../users/enums/users.enums';
 import { dbConfig } from '../config/db.config';
-import { Skill } from 'src/skills/entities/skill.entity';
-import { Category } from 'src/categories/entities/category.entity';
+import { Skill } from '../skills/entities/skill.entity';
+import { Category } from '../categories/entities/category.entity';
 
 dotenv.config();
 
-const dataSource = new DataSource({
-  ...dbConfig(),
-  entities: [User, Skill, Category],
-});
+export async function seedAdmin() {
+  const dataSource = new DataSource({
+    ...dbConfig(),
+    entities: [User, Skill, Category],
+  });
 
-async function seedAdmin() {
   await dataSource.initialize();
 
   const userRepo = dataSource.getRepository(User);
@@ -50,7 +50,9 @@ async function seedAdmin() {
   await dataSource.destroy();
 }
 
-seedAdmin().catch((err) => {
-  console.error('Ошибка при сидинге администратора:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  seedAdmin().catch((err) => {
+    console.error('Ошибка при сидинге администратора:', err);
+    process.exit(1);
+  });
+}

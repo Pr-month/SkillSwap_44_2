@@ -1,4 +1,3 @@
-// src/seeding/data/users.data.ts
 import { User } from '../../users/entities/user.entity';
 import { UserGender, UserRole } from '../../users/enums/users.enums';
 

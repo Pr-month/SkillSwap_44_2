@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+﻿import { Test, TestingModule } from '@nestjs/testing';
 import { CategoriesController } from './categories.controller';
 import { CategoriesService } from './categories.service';
 
@@ -33,44 +33,71 @@ describe('CategoriesController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should call create', async () => {
-    const dto = {
-      name: 'IT',
-    };
+  describe('create', () => {
+    it('should delegate to service and return result', async () => {
+      const dto = { name: 'IT' };
+      const created = { id: '1', name: 'IT' };
 
-    await controller.create(dto);
+      mockCategoriesService.create.mockResolvedValue(created);
 
-    expect(mockCategoriesService.create).toHaveBeenCalledWith(dto);
+      const result = await controller.create(dto);
+
+      expect(result).toEqual(created);
+      expect(mockCategoriesService.create).toHaveBeenCalledWith(dto);
+    });
   });
 
-  it('should call findAll', async () => {
-    await controller.findAll();
+  describe('findAll', () => {
+    it('should delegate to service and return result', async () => {
+      const categories = [{ id: '1', name: 'IT' }];
 
-    expect(mockCategoriesService.findAll).toHaveBeenCalled();
+      mockCategoriesService.findAll.mockResolvedValue(categories);
+
+      const result = await controller.findAll();
+
+      expect(result).toEqual(categories);
+      expect(mockCategoriesService.findAll).toHaveBeenCalled();
+    });
   });
 
-  it('should call findOne', async () => {
-    await controller.findOne('category-id');
+  describe('findOne', () => {
+    it('should delegate to service and return result', async () => {
+      const category = { id: 'category-id', name: 'IT' };
 
-    expect(mockCategoriesService.findOne).toHaveBeenCalledWith('category-id');
+      mockCategoriesService.findOne.mockResolvedValue(category);
+
+      const result = await controller.findOne('category-id');
+
+      expect(result).toEqual(category);
+      expect(mockCategoriesService.findOne).toHaveBeenCalledWith('category-id');
+    });
   });
 
-  it('should call update', async () => {
-    const dto = {
-      name: 'Backend',
-    };
+  describe('update', () => {
+    it('should delegate to service and return result', async () => {
+      const dto = { name: 'Backend' };
+      const updated = { id: 'category-id', name: 'Backend' };
 
-    await controller.update('category-id', dto);
+      mockCategoriesService.update.mockResolvedValue(updated);
 
-    expect(mockCategoriesService.update).toHaveBeenCalledWith(
-      'category-id',
-      dto,
-    );
+      const result = await controller.update('category-id', dto);
+
+      expect(result).toEqual(updated);
+      expect(mockCategoriesService.update).toHaveBeenCalledWith(
+        'category-id',
+        dto,
+      );
+    });
   });
 
-  it('should call remove', async () => {
-    await controller.remove('category-id');
+  describe('remove', () => {
+    it('should delegate to service', async () => {
+      mockCategoriesService.remove.mockResolvedValue(undefined);
 
-    expect(mockCategoriesService.remove).toHaveBeenCalledWith('category-id');
+      const result = await controller.remove('category-id');
+
+      expect(result).toBeUndefined();
+      expect(mockCategoriesService.remove).toHaveBeenCalledWith('category-id');
+    });
   });
 });

@@ -11,11 +11,14 @@ import { configLoaders } from './config/configuration';
 import { FilesModule } from './files/files.module';
 import { RequestsModule } from './requests/requests.module';
 import { CategoriesModule } from './categories/categories.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { CitiesModule } from './cities/cities.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true, // делаем конфиг доступным везде без импорта ConfigModule в другие модули
+      envFilePath: process.env.NODE_ENV === 'test' ? '.env.test.local' : '.env',
       load: configLoaders, // подключаем все конфиги
     }),
     TypeOrmModule.forRootAsync({
@@ -28,6 +31,8 @@ import { CategoriesModule } from './categories/categories.module';
     FilesModule,
     RequestsModule,
     CategoriesModule,
+    NotificationsModule,
+    CitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
