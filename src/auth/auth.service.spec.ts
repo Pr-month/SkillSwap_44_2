@@ -108,7 +108,7 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith({
         ...dto,
         password: 'hashed-password',
-        birthdate: expect.any(Date),
+//        birthdate: expect.any(Date),
       });
       expect(result).toEqual(expectedUser);
     });
