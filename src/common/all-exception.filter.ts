@@ -2,8 +2,8 @@ import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
+  HttpException,
   HttpStatus,
-  PayloadTooLargeException,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { EntityNotFoundError } from 'typeorm';
@@ -16,21 +16,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    let message: string | string[] = 'Internal server error';
 
-    if (exception instanceof EntityNotFoundError) {
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const exceptionResponse = exception.getResponse();
+      message =
+        typeof exceptionResponse === 'string'
+          ? exceptionResponse
+          : ((exceptionResponse as Record<string, unknown>).message as
+              | string
+              | string[]) ?? exception.message;
+    } else if (exception instanceof EntityNotFoundError) {
       status = HttpStatus.NOT_FOUND;
       message = 'Entity not found';
     } else if (
       exception instanceof Error &&
       'code' in exception &&
-      exception.code === '23505'
+      (exception as NodeJS.ErrnoException).code === '23505'
     ) {
       status = HttpStatus.CONFLICT;
       message = 'Duplicate entry error';
-    } else if (exception instanceof PayloadTooLargeException) {
-      status = HttpStatus.PAYLOAD_TOO_LARGE;
-      message = 'Payload too large';
     }
 
     response.status(status).json({
