@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   ConflictException,
   NotFoundException,
@@ -40,7 +40,7 @@ export class UsersService {
         wantToLearn: createUserDto.wantToLearn || [],
         favoriteSkills: createUserDto.favoriteSkills || [],
       });
-      return this.usersRepository.save(user);
+      return await this.usersRepository.save(user);
     } catch (e) {
       if (
         e instanceof QueryFailedError &&
@@ -110,31 +110,20 @@ export class UsersService {
   ): Promise<void> {
     const user = await this.findOne(userId);
 
-    // Проверка старого пароля через AuthService
     if (
       !(await this.authService.comparePasswords(oldPassword, user.password))
     ) {
       throw new ForbiddenException('Old password is incorrect');
     }
 
-    // Запрет на установку того же пароля
     if (oldPassword === newPassword) {
       throw new BadRequestException(
         'New password cannot be the same as the old one',
       );
     }
 
-    // Хеширование нового пароля через AuthService
     const newHash = await this.authService.hashPassword(newPassword);
 
-    // Обновление в БД
     await this.usersRepository.update(userId, { password: newHash });
   }
-
-  // Удалить если не будем делать удаление пользователя
-  // async remove(id: string): Promise<void> {
-  // const result = await this.usersRepository.delete(id);
-  // if (result.affected === 0) {
-  //  throw new NotFoundException(`User #${id} not found`);
-  // }
 }
