@@ -33,7 +33,7 @@ import {
 @ApiTags('Skills')
 @Controller('skills')
 export class SkillsController {
-  constructor(private readonly skillsService: SkillsService) {}
+  constructor(private readonly skillsService: SkillsService) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -57,13 +57,15 @@ export class SkillsController {
     return this.skillsService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   @ApiUpdateSkill()
   update(
     @Param('id') id: string,
     @Body() updateSkillDto: UpdateSkillDto,
+    @Req() req: RequestWithUser,
   ): Promise<Skill> {
-    return this.skillsService.update(id, updateSkillDto);
+    return this.skillsService.update(id, updateSkillDto, req.user.sub);
   }
 
   @UseGuards(JwtAuthGuard)
