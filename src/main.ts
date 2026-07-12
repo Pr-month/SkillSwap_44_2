@@ -8,12 +8,15 @@ import * as express from 'express';
 import * as path from 'path';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { SWAGGER_AUTH_SCHEME_NAME } from './config/swagger.config';
+import cookieParser from 'cookie-parser'
+
 
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(cookieParser())
   app.use(
     '/uploads',
     express.static(path.join(process.cwd(), 'public', 'uploads')),
