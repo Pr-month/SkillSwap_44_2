@@ -37,7 +37,7 @@ export class AuthController {
     const refreshExpiresIn = this.authService.getRefreshTokenExpiresIn();
     const maxAge = ms(refreshExpiresIn);
 
-    response.cookie('refreshToken', result.refreshToken, {
+    response.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
