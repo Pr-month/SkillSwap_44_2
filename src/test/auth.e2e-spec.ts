@@ -1,4 +1,5 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm'; 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -6,6 +7,7 @@ import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { User } from '../users/entities/user.entity';
 import { UserGender } from '../users/enums/users.enums'; 
+import { AllExceptionsFilter } from '../common/all-exception.filter'; 
 
 describe('Auth (E2E)', () => {
   let app: INestApplication;
@@ -22,6 +24,23 @@ describe('Auth (E2E)', () => {
 
     app = moduleFixture.createNestApplication();
     dataSource = moduleFixture.get(DataSource);
+
+    // ГЛОБАЛЬНЫЕ КОМПОНЕНТЫ     
+    // 1. Валидация DTO (whitelist, transform, forbidNonWhitelisted)
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+
+    // 2. Сериализация (скрытие полей, например password)
+    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+    // 3. Обработка ошибок через фильтр
+    app.useGlobalFilters(new AllExceptionsFilter());
+
     await app.init();
 
     httpRequest = request(app.getHttpServer());
@@ -37,6 +56,7 @@ describe('Auth (E2E)', () => {
   };
 
   beforeEach(async () => {
+    // Очищаем БД перед КАЖДЫМ тестом 
     await clearDb();
   });
 
@@ -66,7 +86,7 @@ describe('Auth (E2E)', () => {
       });
 
       expect(user).toBeDefined();
-      expect(user!.password).not.toBe(registerDto.password);
+      expect(user!.password).not.toBe(registerDto.password); 
       expect(user!.gender).toBe(UserGender.MALE);
     });
 
@@ -91,7 +111,7 @@ describe('Auth (E2E)', () => {
 
       expect(res.body).toHaveProperty('accessToken');
 
-      // безопасная проверка куки
+      // Безопасная проверка куки 
       const setCookieHeader = res.headers['set-cookie'];
       expect(setCookieHeader).toBeDefined();
 
