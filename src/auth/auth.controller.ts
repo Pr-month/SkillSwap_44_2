@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Param } from '@nestjs/common';
+import { Controller, Post, Body, Res, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
@@ -27,6 +27,7 @@ export class AuthController {
   }
 
   @ApiAuthLogin()
+  @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,

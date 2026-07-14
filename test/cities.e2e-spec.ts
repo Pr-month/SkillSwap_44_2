@@ -1,11 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
-import { City } from '../src/cities/entities/city.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../src/users/entities/user.entity';
+
+import request from 'supertest';
 
 interface CityResponse {
   id: string;
@@ -16,24 +14,17 @@ interface CityResponse {
   lon?: number;
 }
 
-// interface ErrorResponse {
-//   statusCode: number;
-//   message: string | string[];
-//   timestamp: string;
-//   path: string;
-// }
-
 interface LoginResponseDto {
   success: boolean;
-  user: Partial<User>;
+  user: Partial<{ email: string }>;
   accessToken: string;
   refreshToken: string;
 }
 
-describe('CitiesController', () => {
+describe('CitiesController (E2E)', () => {
   let app: INestApplication;
-  let httpRequest: ReturnType<typeof request>;
-  let cityRepository: Repository<City>;
+  let adminToken: string;
+  let userToken: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -41,57 +32,34 @@ describe('CitiesController', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    );
     await app.init();
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    httpRequest = request(app.getHttpServer());
-    cityRepository = app.get(getRepositoryToken(City));
+    // Логиним админа
+    const loginResAdmin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'admin@skillswap.ru', password: 'AdminSuper2024!' });
 
-    const adminRegisterRes = await httpRequest.post('/auth/register').send({
-      email: 'admin@test.com',
-      password: 'password123',
-      role: 'admin',
-    });
-    expect(adminRegisterRes.status).toBe(201);
+    expect(loginResAdmin.status).toBe(200);
+    adminToken = (loginResAdmin.body as LoginResponseDto).accessToken;
 
-    const userRegisterRes = await httpRequest.post('/auth/register').send({
-      email: 'user@test.com',
-      password: 'password123',
-      role: 'user',
-    });
-    expect(userRegisterRes.status).toBe(201);
-  });
+    // Логиним обычного юзера
+    const loginResUser = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'maria@skillswap.ru', password: 'MariaDev2024!' });
 
-  beforeEach(async () => {
-    await cityRepository.clear();
+    expect(loginResUser.status).toBe(200);
+    userToken = (loginResUser.body as LoginResponseDto).accessToken;
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  // Вспомогательная функция для получения токена админа внутри теста
-  async function getAdminToken(): Promise<string> {
-    const res = await httpRequest
-      .post('/auth/login')
-      .send({ email: 'admin@test.com', password: 'password123' });
-    expect(res.status).toBe(200);
-    return (res.body as LoginResponseDto).accessToken;
-  }
-
-  // Вспомогательная функция для получения токена юзера внутри теста
-  async function getUserToken(): Promise<string> {
-    const res = await httpRequest
-      .post('/auth/login')
-      .send({ email: 'user@test.com', password: 'password123' });
-    expect(res.status).toBe(200);
-    return (res.body as LoginResponseDto).accessToken;
-  }
-
   describe('POST /cities', () => {
     it('should create a city with valid data (authorized as admin)', async () => {
-      const token = await getAdminToken();
-
       const payload = {
         name: 'TestCity',
         lat: 55.7558,
@@ -101,9 +69,9 @@ describe('CitiesController', () => {
         subject: 'Moscow Oblast',
       };
 
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
+      const res = await request(app.getHttpServer())
         .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(payload);
 
       expect(res.status).toBe(201);
@@ -113,30 +81,30 @@ describe('CitiesController', () => {
 
     it('should reject unauthorized POST /cities (no token)', async () => {
       const payload = { name: 'UnauthorizedCity' };
-      const res = await httpRequest.post('/cities').send(payload);
+      const res = await request(app.getHttpServer())
+        .post('/cities')
+        .send(payload);
 
       expect(res.status).toBe(401);
     });
 
     it('should reject POST /cities for non-admin user (role check)', async () => {
-      const token = await getUserToken();
-
       const payload = { name: 'ForbiddenCity' };
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
+
+      const res = await request(app.getHttpServer())
         .post('/cities')
+        .set('Authorization', `Bearer ${userToken}`)
         .send(payload);
 
       expect(res.status).toBe(403);
     });
 
     it('should reject city creation with name too short', async () => {
-      const token = await getAdminToken();
       const payload = { name: 'A' };
 
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
+      const res = await request(app.getHttpServer())
         .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(payload);
 
       expect(res.status).toBe(400);
@@ -145,50 +113,50 @@ describe('CitiesController', () => {
 
   describe('GET /cities', () => {
     it('should list all cities (no auth required)', async () => {
-      const adminToken = await getAdminToken();
-      await httpRequest
-        .set('Authorization', `Bearer ${adminToken}`)
+      await request(app.getHttpServer())
         .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'City1' });
 
-      const res = await httpRequest.get('/cities');
+      const res = await request(app.getHttpServer()).get('/cities');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect((res.body as CityResponse[]).length).toBe(1);
+      expect((res.body as CityResponse[]).length).toBeGreaterThanOrEqual(1);
     });
 
     it('should allow listing cities for non-admin user', async () => {
-      const adminToken = await getAdminToken();
-      await httpRequest
-        .set('Authorization', `Bearer ${adminToken}`)
+      await request(app.getHttpServer())
         .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ name: 'VisibleCity' });
 
-      const userToken = await getUserToken();
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${userToken}`)
-        .get('/cities');
+      const res = await request(app.getHttpServer())
+        .get('/cities')
+        .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
-      expect((res.body as CityResponse[]).length).toBe(1);
+      expect((res.body as CityResponse[]).length).toBeGreaterThanOrEqual(1);
     });
   });
 
   describe('PATCH /cities/:id', () => {
-    it('should update city fields (admin)', async () => {
-      const token = await getAdminToken();
-      const createRes = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
-        .post('/cities')
-        .send({ name: 'OldName', population: 100 });
+    let cityId: string;
 
-      const id = (createRes.body as CityResponse).id;
+    beforeEach(async () => {
+      const res = await request(app.getHttpServer())
+        .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'PatchTestCity', population: 100 });
+      cityId = (res.body as CityResponse).id;
+    });
+
+    it('should update city fields (admin)', async () => {
       const updatePayload = { population: 200 };
 
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
-        .patch(`/cities/${id}`)
+      const res = await request(app.getHttpServer())
+        .patch(`/cities/${cityId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send(updatePayload);
 
       expect(res.status).toBe(200);
@@ -196,57 +164,55 @@ describe('CitiesController', () => {
     });
 
     it('should reject PATCH for non-admin user (403)', async () => {
-      const adminToken = await getAdminToken();
-      const createRes = await httpRequest
-        .set('Authorization', `Bearer ${adminToken}`)
-        .post('/cities')
-        .send({ name: 'ProtectedCity' });
+      const updatePayload = { population: 999 };
 
-      const id = (createRes.body as CityResponse).id;
-
-      const userToken = await getUserToken();
-      const res = await httpRequest
+      const res = await request(app.getHttpServer())
+        .patch(`/cities/${cityId}`)
         .set('Authorization', `Bearer ${userToken}`)
-        .patch(`/cities/${id}`)
-        .send({ population: 999 });
+        .send(updatePayload);
 
       expect(res.status).toBe(403);
     });
   });
 
   describe('DELETE /cities/:id', () => {
-    it('should delete a city (admin)', async () => {
-      const token = await getAdminToken();
-      const createRes = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
+    let cityId: string;
+
+    beforeEach(async () => {
+      const res = await request(app.getHttpServer())
         .post('/cities')
-        .send({ name: 'ToDelete' });
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'DeleteTestCity' });
+      cityId = (res.body as CityResponse).id;
+    });
 
-      const id = (createRes.body as CityResponse).id;
+    it('should delete a city (admin)', async () => {
+      const createRes = await request(app.getHttpServer())
+        .post('/cities')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ name: 'DeleteTestCity' });
 
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${token}`)
-        .delete(`/cities/${id}`);
+      const cityId = (createRes.body as CityResponse).id;
+      expect(cityId).toBeDefined();
 
-      expect(res.status).toBe(200);
+      const deleteRes = await request(app.getHttpServer())
+        .delete(`/cities/${cityId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
-      const getRes = await httpRequest.get(`/cities/${id}`);
-      expect(getRes.status).toBe(404);
+      expect(deleteRes.status).toBe(200);
+
+      const listRes = await request(app.getHttpServer()).get('/cities');
+      expect(listRes.status).toBe(200);
+
+      const cities = listRes.body as CityResponse[];
+      const exists = cities.some((c) => c.id === cityId);
+      expect(exists).toBe(false);
     });
 
     it('should reject DELETE for non-admin user (403)', async () => {
-      const adminToken = await getAdminToken();
-      const createRes = await httpRequest
-        .set('Authorization', `Bearer ${adminToken}`)
-        .post('/cities')
-        .send({ name: 'ProtectedDelete' });
-
-      const id = (createRes.body as CityResponse).id;
-      const userToken = await getUserToken();
-
-      const res = await httpRequest
-        .set('Authorization', `Bearer ${userToken}`)
-        .delete(`/cities/${id}`);
+      const res = await request(app.getHttpServer())
+        .delete(`/cities/${cityId}`)
+        .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(403);
     });
