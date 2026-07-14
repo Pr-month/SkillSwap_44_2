@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Req,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { SkillsService } from './skills.service';
 import { CreateSkillDto } from './dto/create-skill.dto';
@@ -53,7 +54,7 @@ export class SkillsController {
 
   @Get(':id')
   @ApiGetSkillById()
-  findOne(@Param('id') id: string): Promise<Skill> {
+  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Skill> {
     return this.skillsService.findOne(id);
   }
 

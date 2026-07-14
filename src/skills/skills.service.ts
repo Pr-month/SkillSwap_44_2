@@ -184,28 +184,54 @@ export class SkillsService {
     await this.usersRepository.save(user);
   }
 
-  async findSimilar(skillId: string): Promise<User[]> {
-    const skill = await this.skillsRepository.findOne({
-      where: { id: skillId },
-      relations: { category: true },
-    });
+  // async findSimilar(skillId: string): Promise<User[]> {
+  //   const skill = await this.skillsRepository.findOne({
+  //     where: { id: skillId },
+  //     relations: { category: true },
+  //   });
 
-    if (!skill || !skill.category) {
-      return [];
-    }
+  //   if (!skill || !skill.category) {
+  //     return [];
+  //   }
 
-    const categoryId = skill.category.id;
+  //   const categoryId = skill.category.id;
 
-    const users = await this.usersRepository.find({
-      relations: { skills: true },
-      where: {
-        skills: {
-          category: { id: categoryId },
-        },
-      },
-      take: 10,
-    });
+  //   const users = await this.usersRepository.find({
+  //     relations: { skills: true },
+  //     where: {
+  //       skills: {
+  //         category: { id: categoryId },
+  //       },
+  //     },
+  //     take: 10,
+  //   });
 
-    return users;
+  //   return users;
+  // }
+
+  async findSimilar(skillId: string, limit = 10): Promise<User[]> {
+  const skill = await this.skillsRepository.findOne({
+    where: { id: skillId },
+    relations: { category: true, owner: true },
+  });
+
+  if (!skill || !skill.category) {
+    return [];
   }
+
+  const categoryId = skill.category.id;
+  const ownerId = skill.owner.id;
+
+  const users = await this.usersRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.skills', 'skill')
+    .where('skill.categoryId = :categoryId', { categoryId })
+    .andWhere('user.id != :ownerId', { ownerId })
+    .distinctOn(['user.id'])
+    .take(limit)
+    .getMany();
+
+  return users;
+}
+
 }
