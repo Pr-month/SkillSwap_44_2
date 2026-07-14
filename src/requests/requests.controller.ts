@@ -26,6 +26,7 @@ import {
 } from './requests.swagger';
 
 @ApiRequestsController()
+@UseGuards(JwtAuthGuard)
 @Controller('requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
@@ -83,7 +84,6 @@ export class RequestsController {
   }
 
   @ApiRequestsDelete()
-  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(
     @Param('id') id: string,
