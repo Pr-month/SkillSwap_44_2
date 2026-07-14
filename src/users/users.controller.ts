@@ -1,81 +1,65 @@
 import {
-  Body,
   Controller,
   Get,
-  Param,
   Patch,
-  Req,
+  Body,
+  Param,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { RequestWithUser } from '../auth/auth.types';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { UpdatePasswordDto } from './dto/update-password.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+import { ParseUUIDPipe } from '@nestjs/common/pipes';
 import { UsersService } from './users.service';
-import {
-  ApiUsersController,
-  ApiUsersGetAll,
-  ApiUsersGetMe,
-  ApiUsersGetOne,
-  ApiUsersPatchMe,
-  ApiUsersPatchPassword,
-} from './users.swagger';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { RequestWithUser } from '../auth/auth.types';
+import { Req } from '@nestjs/common';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
-@ApiUsersController()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @ApiUsersGetAll()
   @Get()
-  findAll(): Promise<User[]> {
+  @UseGuards(JwtAuthGuard)
+  async findAll() {
     return this.usersService.findAll();
   }
 
-  @ApiUsersGetMe()
-  @UseGuards(JwtAuthGuard)
   @Get('me')
-  getMe(@Req() req: RequestWithUser): Promise<User> {
+  @UseGuards(JwtAuthGuard)
+  async getMe(@Req() req: RequestWithUser) {
     return this.usersService.findOne(req.user.sub);
   }
 
-  @ApiUsersGetOne()
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<User> {
+  @UseGuards(JwtAuthGuard)
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id);
   }
 
-  @ApiUsersPatchMe()
-  @UseGuards(JwtAuthGuard)
   @Patch('me')
-  updateMe(
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateMe(
     @Req() req: RequestWithUser,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<User> {
+  ) {
     return this.usersService.update(req.user.sub, updateUserDto);
   }
 
-  @ApiUsersPatchPassword()
-  @UseGuards(JwtAuthGuard)
   @Patch('me/password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   async updatePassword(
     @Req() req: RequestWithUser,
-    @Body() updatePasswordDto: UpdatePasswordDto,
-  ): Promise<{ message: string }> {
+    @Body() body: UpdatePasswordDto,
+  ) {
     await this.usersService.updatePassword(
       req.user.sub,
-      updatePasswordDto.oldPassword,
-      updatePasswordDto.newPassword,
+      body.oldPassword,
+      body.newPassword,
     );
-
     return { message: 'Password successfully changed' };
   }
-
-  // Удалить если не будем делать удаление пользователя
-  // Если будем, закрыть гардой с админкой
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.usersService.remove(id);
-  // }
 }

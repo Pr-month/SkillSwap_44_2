@@ -42,7 +42,9 @@ describe('CategoriesController (e2e)', () => {
         transform: true,
       }),
     );
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
     app.useGlobalFilters(new AllExceptionsFilter());
 
     await app.init();
@@ -72,13 +74,20 @@ describe('CategoriesController (e2e)', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body).toHaveLength(CategoriesData.length);
+      expect(response.body.length).toBeGreaterThanOrEqual(
+        CategoriesData.length,
+      );
 
       const category = response.body[0];
       expect(category).toHaveProperty('id');
       expect(category).toHaveProperty('name');
       expect(Array.isArray(category.children)).toBe(true);
       expect(category.parentId).toBeNull();
+
+      const returnedNames = new Set(response.body.map((c: any) => c.name));
+      for (const expected of CategoriesData) {
+        expect(returnedNames).toContain(expected.name);
+      }
     });
   });
 

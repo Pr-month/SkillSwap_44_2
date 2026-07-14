@@ -50,10 +50,16 @@ describe('RequestsController (E2E)', () => {
       const res = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email, password: pass });
-      expect(res.status).toBe(200);
+      
+      // Не делаем expect здесь, чтобы увидеть реальный ответ в логах при ошибке
+      if (res.status !== 200) {
+        throw new Error(`Login failed for ${email}. Status: ${res.status}, Body: ${JSON.stringify(res.body)}`);
+      }
+      
       return (res.body as LoginResponseDto).accessToken;
     };
 
+    // Теперь эти логины должны работать, так как БД чистая, но сидинг (который ты запускаешь отдельно) уже создал пользователей
     adminToken = await login('admin@skillswap.ru', 'AdminSuper2024!');
     mariaToken = await login('maria@skillswap.ru', 'MariaDev2024!');
     ivanToken = await login('ivan@skillswap.ru', 'IvanLead#85');
@@ -61,6 +67,16 @@ describe('RequestsController (E2E)', () => {
 
   afterAll(async () => {
     await app.close();
+  });
+
+  // 👇 2. ДИАГНОСТИЧЕСКИЙ ТЕСТ ПЕРВЫМ
+  it('should successfully login admin (diagnostic)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'admin@skillswap.ru', password: 'AdminSuper2024!' });
+    
+    expect(res.status).toBe(200);
+    expect(res.body.accessToken).toBeDefined();
   });
 
   async function ensureSkillExists(
@@ -73,13 +89,20 @@ describe('RequestsController (E2E)', () => {
     const categoryRepo = dataSource.getRepository(Category);
 
     const owner = await userRepo.findOne({ where: { email: ownerEmail } });
-    if (!owner) throw new Error(`User ${ownerEmail} not found`);
+    if (!owner) throw new Error(`User ${ownerEmail} not found. Check seed script.`);
 
+    // 👇 3. НЕ СОЗДАЁМ КАТЕГОРИИ ЗДЕСЬ
+    // Если категории нет, тест должен упасть и сказать "добавь это в seed", а не создавать сам.
     let category = await categoryRepo.findOne({
       where: { name: categoryName },
     });
+    
     if (!category) {
-      category = await categoryRepo.save({ name: categoryName });
+      throw new Error(
+        `Category "${categoryName}" not found in DB. ` +
+        `Please ensure seedCategories() creates this category. ` +
+        `Current categories in DB: ${await categoryRepo.find().then(c => c.map(cat => cat.name).join(', '))}`
+      );
     }
 
     let skill = await skillRepo.findOne({
@@ -112,7 +135,7 @@ describe('RequestsController (E2E)', () => {
     const requestedSkillId = await ensureSkillExists(
       'ivan@skillswap.ru',
       'Agile/Scrum',
-      'Management',
+      'Управление командой',
     );
 
     const payload = { offeredSkillId, requestedSkillId };
@@ -136,7 +159,7 @@ describe('RequestsController (E2E)', () => {
       const requestedSkillId = await ensureSkillExists(
         'ivan@skillswap.ru',
         'Agile/Scrum',
-        'Management',
+        'Управление командой',
       );
 
       const payload = { offeredSkillId, requestedSkillId };

@@ -184,31 +184,6 @@ export class SkillsService {
     await this.usersRepository.save(user);
   }
 
-  // async findSimilar(skillId: string): Promise<User[]> {
-  //   const skill = await this.skillsRepository.findOne({
-  //     where: { id: skillId },
-  //     relations: { category: true },
-  //   });
-
-  //   if (!skill || !skill.category) {
-  //     return [];
-  //   }
-
-  //   const categoryId = skill.category.id;
-
-  //   const users = await this.usersRepository.find({
-  //     relations: { skills: true },
-  //     where: {
-  //       skills: {
-  //         category: { id: categoryId },
-  //       },
-  //     },
-  //     take: 10,
-  //   });
-
-  //   return users;
-  // }
-
   async findSimilar(skillId: string, limit = 10): Promise<User[]> {
   const skill = await this.skillsRepository.findOne({
     where: { id: skillId },
