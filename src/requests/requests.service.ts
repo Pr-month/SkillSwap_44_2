@@ -34,7 +34,12 @@ export class RequestsService {
   ): Promise<Request> {
     const request = await this.requestsRepository.findOne({
       where: { id: requestId },
-      relations: { receiver: true, sender: true, offeredSkill: true, requestedSkill: true },
+      relations: {
+        receiver: true,
+        sender: true,
+        offeredSkill: true,
+        requestedSkill: true,
+      },
     });
 
     if (!request) {
@@ -97,15 +102,25 @@ export class RequestsService {
     const { offeredSkillId, requestedSkillId } = createRequestDto;
 
     const [offeredSkill, requestedSkill] = await Promise.all([
-      this.skillsRepository.findOne({ where: { id: offeredSkillId } }),
-      this.skillsRepository.findOne({ where: { id: requestedSkillId } }),
+      this.skillsRepository.findOne({
+        where: { id: offeredSkillId },
+        relations: ['owner'],
+      }),
+      this.skillsRepository.findOne({
+        where: { id: requestedSkillId },
+        relations: ['owner'],
+      }),
     ]);
 
     if (!offeredSkill) {
-      throw new NotFoundException(`Offered skill with id ${offeredSkillId} not found`);
+      throw new NotFoundException(
+        `Offered skill with id ${offeredSkillId} not found`,
+      );
     }
     if (!requestedSkill) {
-      throw new NotFoundException(`Requested skill with id ${requestedSkillId} not found`);
+      throw new NotFoundException(
+        `Requested skill with id ${requestedSkillId} not found`,
+      );
     }
 
     const receiverCandidate = requestedSkill.owner;
@@ -199,10 +214,10 @@ export class RequestsService {
     const requestedSkill = request.requestedSkill;
 
     // Обмен навыками
-    if (!sender.skills.some(s => s.id === requestedSkill.id)) {
+    if (!sender.skills.some((s) => s.id === requestedSkill.id)) {
       sender.skills.push(requestedSkill);
     }
-    if (!receiver.skills.some(s => s.id === offeredSkill.id)) {
+    if (!receiver.skills.some((s) => s.id === offeredSkill.id)) {
       receiver.skills.push(offeredSkill);
     }
 
