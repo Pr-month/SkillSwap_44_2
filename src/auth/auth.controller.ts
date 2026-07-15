@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Res, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
@@ -14,6 +15,8 @@ import {
   ApiAuthRefresh,
   ApiAuthRegister,
 } from './auth.swagger';
+import { JwtAuthGuard } from './guards/jwt.guard';
+import { RequestWithUser } from './auth.types';
 
 @ApiAuthController()
 @Controller('auth')
@@ -51,9 +54,10 @@ export class AuthController {
   }
 
   @ApiAuthLogout()
-  @Post('logout/:id')
-  async logout(@Param('id') id: string) {
-    return this.authService.logout(id);
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Req() req: RequestWithUser) {
+    return this.authService.logout(req.user.sub);
   }
 
   @ApiAuthRefresh()
