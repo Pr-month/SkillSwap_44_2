@@ -48,7 +48,11 @@ describe('SkillsService', () => {
   // --------------- create ---------------
 
   describe('create', () => {
-    const dto = { title: 'Guitar', description: 'Learn chords', images: ['img.jpg'] };
+    const dto = {
+      title: 'Guitar',
+      description: 'Learn chords',
+      images: ['img.jpg'],
+    };
 
     it('should create a skill', async () => {
       const owner = { id: 'user-id', name: 'User' } as unknown as User;
@@ -72,7 +76,11 @@ describe('SkillsService', () => {
     it('should create a skill with default empty description', async () => {
       const owner = { id: 'user-id' } as unknown as User;
       const dtoNoDesc = { title: 'Guitar' };
-      const created = { id: 'skill-id', title: 'Guitar', description: '' } as unknown as Skill;
+      const created = {
+        id: 'skill-id',
+        title: 'Guitar',
+        description: '',
+      } as unknown as Skill;
 
       usersRepository.findOneBy.mockResolvedValue(owner);
       skillsRepository.create.mockReturnValue(created);
@@ -86,7 +94,9 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when user not found', async () => {
       usersRepository.findOneBy.mockResolvedValue(null);
 
-      await expect(service.create('unknown', dto)).rejects.toThrow('User not found');
+      await expect(service.create('unknown', dto)).rejects.toThrow(
+        'User not found',
+      );
     });
   });
 
@@ -112,7 +122,9 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when page exceeds total pages', async () => {
       skillsRepository.findAndCount.mockResolvedValue([[], 10]);
 
-      await expect(service.findAll({ page: 5, limit: 10 })).rejects.toThrow('Страница не найдена');
+      await expect(service.findAll({ page: 5, limit: 10 })).rejects.toThrow(
+        'Страница не найдена',
+      );
     });
 
     it('should return empty data when total is 0', async () => {
@@ -141,7 +153,9 @@ describe('SkillsService', () => {
       const result = await service.findOne('skill-id');
 
       expect(result).toEqual(skill);
-      expect(skillsRepository.findOne).toHaveBeenCalledWith({ where: { id: 'skill-id' } });
+      expect(skillsRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'skill-id' },
+      });
     });
 
     it('should throw NotFoundException when skill not found', async () => {
@@ -168,7 +182,9 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when skill not found', async () => {
       skillsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update('unknown', { title: 'New' })).rejects.toThrow('not found');
+      await expect(service.update('unknown', { title: 'New' })).rejects.toThrow(
+        'not found',
+      );
     });
   });
 
@@ -176,7 +192,10 @@ describe('SkillsService', () => {
 
   describe('remove', () => {
     it('should delete a skill when user is the owner', async () => {
-      const skill = { id: 'skill-id', owner: { id: 'user-id' } } as unknown as Skill;
+      const skill = {
+        id: 'skill-id',
+        owner: { id: 'user-id' },
+      } as unknown as Skill;
 
       skillsRepository.findOne.mockResolvedValue(skill);
       skillsRepository.remove.mockResolvedValue(skill);
@@ -190,15 +209,22 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when skill not found', async () => {
       skillsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.remove('unknown', 'user-id')).rejects.toThrow('Навык не найден');
+      await expect(service.remove('unknown', 'user-id')).rejects.toThrow(
+        'Навык не найден',
+      );
     });
 
     it('should throw ForbiddenException when non-owner tries to delete', async () => {
-      const skill = { id: 'skill-id', owner: { id: 'owner-id' } } as unknown as Skill;
+      const skill = {
+        id: 'skill-id',
+        owner: { id: 'owner-id' },
+      } as unknown as Skill;
 
       skillsRepository.findOne.mockResolvedValue(skill);
 
-      await expect(service.remove('skill-id', 'other-user')).rejects.toThrow('Можно удалить только свой навык');
+      await expect(service.remove('skill-id', 'other-user')).rejects.toThrow(
+        'Можно удалить только свой навык',
+      );
     });
   });
 
@@ -222,23 +248,32 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when skill not found', async () => {
       skillsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.addToFavorite('user-id', 'unknown')).rejects.toThrow('not found');
+      await expect(service.addToFavorite('user-id', 'unknown')).rejects.toThrow(
+        'not found',
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {
       skillsRepository.findOne.mockResolvedValue(skill);
       usersRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.addToFavorite('unknown', 'skill-id')).rejects.toThrow('User not found');
+      await expect(
+        service.addToFavorite('unknown', 'skill-id'),
+      ).rejects.toThrow('User not found');
     });
 
     it('should throw ConflictException when skill already in favorites', async () => {
-      const userWithFav = { id: 'user-id', favoriteSkills: [skill] } as unknown as User;
+      const userWithFav = {
+        id: 'user-id',
+        favoriteSkills: [skill],
+      } as unknown as User;
 
       skillsRepository.findOne.mockResolvedValue(skill);
       usersRepository.findOne.mockResolvedValue(userWithFav);
 
-      await expect(service.addToFavorite('user-id', 'skill-id')).rejects.toThrow('already in favorites');
+      await expect(
+        service.addToFavorite('user-id', 'skill-id'),
+      ).rejects.toThrow('already in favorites');
     });
   });
 
@@ -262,18 +297,25 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when skill not found', async () => {
       skillsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.removeFromFavorites('unknown', 'user-id')).rejects.toThrow('Навык не найден');
+      await expect(
+        service.removeFromFavorites('unknown', 'user-id'),
+      ).rejects.toThrow('Навык не найден');
     });
 
     it('should throw NotFoundException when user not found', async () => {
       skillsRepository.findOne.mockResolvedValue(skill);
       usersRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.removeFromFavorites('skill-id', 'unknown')).rejects.toThrow('Пользователь не найден');
+      await expect(
+        service.removeFromFavorites('skill-id', 'unknown'),
+      ).rejects.toThrow('Пользователь не найден');
     });
 
     it('should not fail when skill is not in favorites (filter handles missing)', async () => {
-      const userWithout = { id: 'user-id', favoriteSkills: [] } as unknown as User;
+      const userWithout = {
+        id: 'user-id',
+        favoriteSkills: [],
+      } as unknown as User;
 
       skillsRepository.findOne.mockResolvedValue(skill);
       usersRepository.findOne.mockResolvedValue(userWithout);
@@ -304,15 +346,22 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when user not found', async () => {
       usersRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.removeFromFavorite('unknown', 'skill-id')).rejects.toThrow('User not found');
+      await expect(
+        service.removeFromFavorite('unknown', 'skill-id'),
+      ).rejects.toThrow('User not found');
     });
 
     it('should throw NotFoundException when skill not in favorites', async () => {
-      const userWithout = { id: 'user-id', favoriteSkills: [] } as unknown as User;
+      const userWithout = {
+        id: 'user-id',
+        favoriteSkills: [],
+      } as unknown as User;
 
       usersRepository.findOne.mockResolvedValue(userWithout);
 
-      await expect(service.removeFromFavorite('user-id', 'skill-id')).rejects.toThrow('is not in favorites');
+      await expect(
+        service.removeFromFavorite('user-id', 'skill-id'),
+      ).rejects.toThrow('is not in favorites');
     });
   });
 
@@ -320,7 +369,10 @@ describe('SkillsService', () => {
 
   describe('findSimilar', () => {
     it('should return users with skills in same category', async () => {
-      const skill = { id: 'skill-id', category: { id: 'cat-1' } } as unknown as Skill;
+      const skill = {
+        id: 'skill-id',
+        category: { id: 'cat-1' },
+      } as unknown as Skill;
       const users = [{ id: 'u-1' }, { id: 'u-2' }] as unknown as User[];
 
       skillsRepository.findOne.mockResolvedValue(skill);

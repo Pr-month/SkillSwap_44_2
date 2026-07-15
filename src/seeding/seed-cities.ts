@@ -31,7 +31,7 @@ export async function seedCitiesFn() {
 
     const city = cityRepo.create(cityData);
     await cityRepo.save(city);
-    console.log(`  ✓ ${cityData.name}`);
+    // console.log(`  ✓ ${cityData.name}`);
   }
 
   const total = await cityRepo.count();

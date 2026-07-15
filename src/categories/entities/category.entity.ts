@@ -17,7 +17,7 @@ export class Category {
   id: string;
 
   @ApiProperty({ example: 'Музыкальные инструменты' })
-  @Column({ length: 100 })
+  @Column({ length: 100, unique: true })
   name: string;
 
   @ApiPropertyOptional({ type: () => Category, nullable: true })

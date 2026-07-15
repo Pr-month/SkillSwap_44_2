@@ -1,12 +1,9 @@
-import { Controller, Post, Body, Res, Param } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { CreateUserDto } from '../users/dto/create-user.dto';
-import { User } from '../users/entities/user.entity';
-import { LoginDto } from './dto/login.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
+import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import ms from 'ms';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { User } from '../users/entities/user.entity';
+import { AuthService } from './auth.service';
 import {
   ApiAuthController,
   ApiAuthLogin,
@@ -14,6 +11,11 @@ import {
   ApiAuthRefresh,
   ApiAuthRegister,
 } from './auth.swagger';
+import { RequestWithUser } from './auth.types';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { JwtAuthGuard } from './guards/jwt.guard';
 
 @ApiAuthController()
 @Controller('auth')
@@ -27,6 +29,7 @@ export class AuthController {
   }
 
   @ApiAuthLogin()
+  @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
@@ -37,7 +40,7 @@ export class AuthController {
     const refreshExpiresIn = this.authService.getRefreshTokenExpiresIn();
     const maxAge = ms(refreshExpiresIn);
 
-    response.cookie('refreshToken', result.refreshToken, {
+    response.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -50,9 +53,10 @@ export class AuthController {
   }
 
   @ApiAuthLogout()
-  @Post('logout/:id')
-  async logout(@Param('id') id: string) {
-    return this.authService.logout(id);
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Req() req: RequestWithUser) {
+    return this.authService.logout(req.user.sub);
   }
 
   @ApiAuthRefresh()

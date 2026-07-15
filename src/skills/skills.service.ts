@@ -20,7 +20,7 @@ export class SkillsService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
     const owner = await this.usersRepository.findOneBy({ id: userId });
@@ -69,18 +69,28 @@ export class SkillsService {
     return skill;
   }
 
-  async update(id: string, updateSkillDto: UpdateSkillDto): Promise<Skill> {
-    // Находим существующий навык по UUID
-    const skill = await this.findOne(id);
+  async update(id: string, updateSkillDto: UpdateSkillDto, userId: string): Promise<Skill> {
+    // Загружаем навык вместе с владельцем
+    const skill = await this.skillsRepository.findOne({
+      where: { id },
+      relations: ['owner'],
+    });
 
-    // Применяем переданные в DTO поля к найденной сущности (частичное обновление)
+    if (!skill) {
+      throw new NotFoundException(`Skill #${id} not found`);
+    }
+
+    // Проверяем, что текущий пользователь — владелец
+    if (skill.owner.id !== userId) {
+      throw new ForbiddenException('Вы можете обновлять только свои навыки');
+    }
+
+    // Применяем изменения
     Object.assign(skill, updateSkillDto);
 
     try {
-      // Сохраняем изменения в БД через TypeORM
       return await this.skillsRepository.save(skill);
     } catch (e) {
-      // Пробрасываем ошибку дальше — глобальный фильтр исключений NestJS обработает её
       throw e;
     }
   }
@@ -174,28 +184,29 @@ export class SkillsService {
     await this.usersRepository.save(user);
   }
 
-  async findSimilar(skillId: string): Promise<User[]> {
-    const skill = await this.skillsRepository.findOne({
-      where: { id: skillId },
-      relations: { category: true },
-    });
+  async findSimilar(skillId: string, limit = 10): Promise<User[]> {
+  const skill = await this.skillsRepository.findOne({
+    where: { id: skillId },
+    relations: { category: true, owner: true },
+  });
 
-    if (!skill || !skill.category) {
-      return [];
-    }
-
-    const categoryId = skill.category.id;
-
-    const users = await this.usersRepository.find({
-      relations: { skills: true },
-      where: {
-        skills: {
-          category: { id: categoryId },
-        },
-      },
-      take: 10,
-    });
-
-    return users;
+  if (!skill || !skill.category) {
+    return [];
   }
+
+  const categoryId = skill.category.id;
+  const ownerId = skill.owner.id;
+
+  const users = await this.usersRepository
+    .createQueryBuilder('user')
+    .leftJoinAndSelect('user.skills', 'skill')
+    .where('skill.categoryId = :categoryId', { categoryId })
+    .andWhere('user.id != :ownerId', { ownerId })
+    .distinctOn(['user.id'])
+    .take(limit)
+    .getMany();
+
+  return users;
+}
+
 }

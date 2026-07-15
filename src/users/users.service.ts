@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   ConflictException,
   NotFoundException,
@@ -14,6 +14,7 @@ import { QueryFailedError, Repository } from 'typeorm';
 import { DatabaseError } from 'pg';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { plainToClass } from 'class-transformer';
 import { AuthService } from '../auth/auth.service';
 
 @Injectable()
@@ -24,6 +25,21 @@ export class UsersService {
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
   ) {}
+
+  // возвращает сырой Entity с паролем
+  private async findOneEntity(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  // возвращает DTO-объект без пароля
+  async findOne(id: string): Promise<User> {
+    const entity = await this.findOneEntity(id);
+    return plainToClass(User, entity);
+  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
@@ -40,7 +56,7 @@ export class UsersService {
         wantToLearn: createUserDto.wantToLearn || [],
         favoriteSkills: createUserDto.favoriteSkills || [],
       });
-      return this.usersRepository.save(user);
+      return await this.usersRepository.save(user);
     } catch (e) {
       if (
         e instanceof QueryFailedError &&
@@ -53,19 +69,8 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
-  }
-
-  async findOne(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
+    const users = await this.usersRepository.find();
+    return users.map((u) => plainToClass(User, u));
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -80,7 +85,7 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
+    const user = await this.findOneEntity(id);
 
     Object.assign(user, {
       ...updateUserDto,
@@ -90,7 +95,8 @@ export class UsersService {
     });
 
     try {
-      return await this.usersRepository.save(user);
+      const saved = await this.usersRepository.save(user);
+      return plainToClass(User, saved);
     } catch (e) {
       if (
         e instanceof QueryFailedError &&
@@ -108,33 +114,25 @@ export class UsersService {
     oldPassword: string,
     newPassword: string,
   ): Promise<void> {
-    const user = await this.findOne(userId);
-
-    // Проверка старого пароля через AuthService
-    if (
-      !(await this.authService.comparePasswords(oldPassword, user.password))
-    ) {
-      throw new ForbiddenException('Old password is incorrect');
-    }
-
-    // Запрет на установку того же пароля
     if (oldPassword === newPassword) {
       throw new BadRequestException(
         'New password cannot be the same as the old one',
       );
     }
 
-    // Хеширование нового пароля через AuthService
+    const userEntity = await this.findOneEntity(userId);
+
+    if (
+      !(await this.authService.comparePasswords(
+        oldPassword,
+        userEntity.password,
+      ))
+    ) {
+      throw new ForbiddenException('Old password is incorrect');
+    }
+
     const newHash = await this.authService.hashPassword(newPassword);
 
-    // Обновление в БД
     await this.usersRepository.update(userId, { password: newHash });
   }
-
-  // Удалить если не будем делать удаление пользователя
-  // async remove(id: string): Promise<void> {
-  // const result = await this.usersRepository.delete(id);
-  // if (result.affected === 0) {
-  //  throw new NotFoundException(`User #${id} not found`);
-  // }
 }
