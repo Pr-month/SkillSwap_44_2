@@ -21,12 +21,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      message =
-        typeof exceptionResponse === 'string'
-          ? exceptionResponse
-          : ((exceptionResponse as Record<string, unknown>).message as
-              | string
-              | string[]) ?? exception.message;
+
+      if (typeof exceptionResponse === 'string') {
+        message = exceptionResponse;
+      } else if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null
+      ) {
+        const responseObj = exceptionResponse as Record<string, any>;
+        message = responseObj.message ?? exception.message;
+      } else {
+        message = exception.message;
+      }
     } else if (exception instanceof EntityNotFoundError) {
       status = HttpStatus.NOT_FOUND;
       message = 'Entity not found';

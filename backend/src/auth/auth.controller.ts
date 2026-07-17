@@ -1,4 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Response } from 'express';
 import ms from 'ms';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -11,11 +20,11 @@ import {
   ApiAuthRefresh,
   ApiAuthRegister,
 } from './auth.swagger';
-import { RequestWithUser } from './auth.types';
+import { RequestRefreshToken, RequestWithUser } from './auth.types';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt.guard';
+import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 
 @ApiAuthController()
 @Controller('auth')
@@ -61,7 +70,8 @@ export class AuthController {
 
   @ApiAuthRefresh()
   @Post('refresh')
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refresh(dto.refreshToken);
+  @UseGuards(JwtRefreshGuard)
+  refresh(@Req() req: RequestRefreshToken) {
+    return this.authService.refresh(req.user.refreshToken);
   }
 }
