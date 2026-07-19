@@ -1,0 +1,7 @@
+# Секреты
+.env.local
+.env
+
+# IDE
+.idea/
+.vscode
