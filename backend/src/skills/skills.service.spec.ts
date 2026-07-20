@@ -169,12 +169,12 @@ describe('SkillsService', () => {
 
   describe('update', () => {
     it('should update a skill', async () => {
-      const skill = { id: 'skill-id', title: 'Old' } as Skill;
+      const skill = { id: 'skill-id', title: 'Old', owner: { id: 'user-id' }} as Skill;
 
       skillsRepository.findOne.mockResolvedValue(skill);
       skillsRepository.save.mockImplementation(async (s) => s);
 
-      const result = await service.update('skill-id', { title: 'New' });
+      const result = await service.update('skill-id', { title: 'New' }, 'user-id');
 
       expect(result.title).toBe('New');
     });
@@ -182,7 +182,7 @@ describe('SkillsService', () => {
     it('should throw NotFoundException when skill not found', async () => {
       skillsRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.update('unknown', { title: 'New' })).rejects.toThrow(
+      await expect(service.update('unknown', { title: 'New' }, 'user-id')).rejects.toThrow(
         'not found',
       );
     });
@@ -372,20 +372,25 @@ describe('SkillsService', () => {
       const skill = {
         id: 'skill-id',
         category: { id: 'cat-1' },
+        owner: {id: 'user-id'}
       } as unknown as Skill;
       const users = [{ id: 'u-1' }, { id: 'u-2' }] as unknown as User[];
+      const mockQueryBuilder = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinctOn: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(users),
+      }
 
       skillsRepository.findOne.mockResolvedValue(skill);
-      usersRepository.find.mockResolvedValue(users);
+      usersRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder)
 
       const result = await service.findSimilar('skill-id');
 
       expect(result).toEqual(users);
-      expect(usersRepository.find).toHaveBeenCalledWith({
-        relations: { skills: true },
-        where: { skills: { category: { id: 'cat-1' } } },
-        take: 10,
-      });
+      expect(usersRepository.createQueryBuilder).toHaveBeenCalledWith('user');
     });
 
     it('should return empty array when skill not found', async () => {
