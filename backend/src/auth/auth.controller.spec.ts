@@ -4,7 +4,6 @@ import { AuthService } from './auth.service';
 import { Response } from 'express';
 import ms from 'ms';
 import { LoginDto } from './dto/login.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -65,7 +64,7 @@ describe('AuthController', () => {
       const result = await controller.login(dto, response);
 
       expect(authService.login).toHaveBeenCalledWith(dto);
-      expect(response.cookie).toHaveBeenCalledWith('refreshToken', 'refresh-token', {
+      expect(response.cookie).toHaveBeenCalledWith('refresh_token', 'refresh-token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -80,22 +79,24 @@ describe('AuthController', () => {
     });
   });
 
-  describe('POST /auth/logout/:id', () => {
-    it('should call logout with userId', async () => {
-      const id = 'user-123';
-      await controller.logout(id);
-      expect(authService.logout).toHaveBeenCalledWith(id);
+  describe('POST /auth/logout', () => {
+    it('should call logout with userId from req.user.sub', async () => {
+      const req = { user: {sub: 'user-123' }} as any;
+      await controller.logout(req);
+      expect(authService.logout).toHaveBeenCalledWith('user-123');
     });
   });
 
   describe('POST /auth/refresh', () => {
-    it('should call refresh with refreshToken from DTO', async () => {
-      const dto: RefreshTokenDto = { refreshToken: 'old-token' };
+    it('should call refresh with refreshToken from req.user', async () => {
+      const req = {
+        user: { sub: 'user-123', refreshToken: 'old-token' }
+      } as any;
       const mockResult = { accessToken: 'new-access', refreshToken: 'new-refresh' };
       authService.refresh.mockResolvedValue(mockResult);
 
-      const result = await controller.refresh(dto);
-      expect(authService.refresh).toHaveBeenCalledWith(dto.refreshToken);
+      const result = await controller.refresh(req);
+      expect(authService.refresh).toHaveBeenCalledWith(req.user.refreshToken);
       expect(result).toEqual(mockResult);
     });
   });
