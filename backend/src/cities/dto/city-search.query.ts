@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CitySearchQuery {
   @ApiProperty({
@@ -6,6 +7,8 @@ export class CitySearchQuery {
     required: false,
     example: 'Мос',
   })
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @ApiProperty({
@@ -13,6 +16,8 @@ export class CitySearchQuery {
     required: false,
     example: 'Центр',
   })
+  @IsOptional()
+  @IsString()
   district?: string;
 
   @ApiProperty({
@@ -20,5 +25,7 @@ export class CitySearchQuery {
     required: false,
     example: 'Московская область',
   })
+  @IsOptional()
+  @IsString()
   subject?: string;
 }
