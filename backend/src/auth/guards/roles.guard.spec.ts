@@ -57,9 +57,7 @@ describe('RolesGuard', () => {
   });
 
   it('Роль не требуется', () => {
-    jest
-      .spyOn(reflector, 'getAllAndOverride')
-      .mockReturnValue(undefined);
+    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
 
     const context = MockContext({ role: UserRole.USER });
     const result = rolesGuard.canActivate(context as any);

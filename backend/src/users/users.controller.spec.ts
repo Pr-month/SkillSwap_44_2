@@ -85,7 +85,7 @@ describe('UsersController', () => {
 
       mockUsersService.update.mockResolvedValue(updated);
 
-      const result = await controller.updateMe(req, dto as any);
+      const result = await controller.updateMe(req, dto);
 
       expect(result).toEqual(updated);
       expect(mockUsersService.update).toHaveBeenCalledWith('user-id', dto);

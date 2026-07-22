@@ -21,7 +21,10 @@ export function ApiRequestsPost() {
       type: Request,
     }),
     ApiResponse({ status: 401, description: 'Пользователь не авторизован' }),
-    ApiResponse({ status: 404, description: 'Навык или пользователь не найден' }),
+    ApiResponse({
+      status: 404,
+      description: 'Навык или пользователь не найден',
+    }),
     ApiResponse({ status: 409, description: 'Конфликт при создании заявки' }),
   );
 }

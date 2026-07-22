@@ -16,7 +16,10 @@ export function ApiAuthRegister() {
       type: User,
     }),
     ApiResponse({ status: 400, description: 'Некорректные данные' }),
-    ApiResponse({ status: 409, description: 'Пользователь с таким email уже существует' }),
+    ApiResponse({
+      status: 409,
+      description: 'Пользователь с таким email уже существует',
+    }),
   );
 }
 
@@ -37,7 +40,10 @@ export function ApiAuthLogout() {
   return applyDecorators(
     ApiOperation({ summary: 'Выйти из аккаунта' }),
     ApiParam({ name: 'id', description: 'UUID пользователя' }),
-    ApiResponse({ status: 201, description: 'Пользователь успешно вышел из аккаунта' }),
+    ApiResponse({
+      status: 201,
+      description: 'Пользователь успешно вышел из аккаунта',
+    }),
     ApiResponse({ status: 404, description: 'Пользователь не найден' }),
   );
 }

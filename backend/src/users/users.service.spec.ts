@@ -65,12 +65,19 @@ describe('UsersService', () => {
     };
 
     it('should create and return a new user', async () => {
-      const createdUser = { id: 'user-id', ...createUserDto, birthdate: new Date('1999-01-01'), skills: [], wantToLearn: [], favoriteSkills: [] } as unknown as User;
+      const createdUser = {
+        id: 'user-id',
+        ...createUserDto,
+        birthdate: new Date('1999-01-01'),
+        skills: [],
+        wantToLearn: [],
+        favoriteSkills: [],
+      } as unknown as User;
 
       mockRepository.create.mockReturnValue(createdUser);
       mockRepository.save.mockResolvedValue(createdUser);
 
-      const result = await service.create(createUserDto as any);
+      const result = await service.create(createUserDto);
 
       expect(result).toEqual(createdUser);
       expect(mockRepository.create).toHaveBeenCalledWith({
@@ -90,7 +97,11 @@ describe('UsersService', () => {
     });
 
     it('should throw ConflictException on duplicate email (23505)', async () => {
-      const qe = new QueryFailedError('SELECT 1', [] as any, { code: '23505' } as any);
+      const qe = new QueryFailedError(
+        'SELECT 1',
+        [] as any,
+        { code: '23505' } as any,
+      );
 
       mockRepository.create.mockReturnValue({});
       mockRepository.save.mockRejectedValue(qe);
@@ -181,11 +192,13 @@ describe('UsersService', () => {
     });
 
     it('should throw InternalServerErrorException on database error', async () => {
-      mockRepository.findOne.mockRejectedValue(new Error('DB connection failed'));
+      mockRepository.findOne.mockRejectedValue(
+        new Error('DB connection failed'),
+      );
 
-      await expect(
-        service.findByEmail('test@test.com'),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(service.findByEmail('test@test.com')).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -218,7 +231,7 @@ describe('UsersService', () => {
       mockRepository.save.mockImplementation(async (entity) => entity);
 
       const result = await service.update('user-id', {
-        birthdate: '1995-05-15' as any,
+        birthdate: '1995-05-15',
       });
 
       expect(result.birthdate).toEqual(new Date('1995-05-15'));
@@ -233,8 +246,16 @@ describe('UsersService', () => {
     });
 
     it('should throw ConflictException on duplicate email (23505)', async () => {
-      const user = { id: 'user-id', name: 'User', email: 'old@test.com' } as User;
-      const qe = new QueryFailedError('SELECT 1', [] as any, { code: '23505' } as any);
+      const user = {
+        id: 'user-id',
+        name: 'User',
+        email: 'old@test.com',
+      } as User;
+      const qe = new QueryFailedError(
+        'SELECT 1',
+        [] as any,
+        { code: '23505' } as any,
+      );
 
       mockRepository.findOne.mockResolvedValue(user);
       mockRepository.save.mockRejectedValue(qe);

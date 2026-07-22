@@ -54,9 +54,9 @@ describe('FilesController', () => {
     });
 
     it('should throw 400 when no file is uploaded', () => {
-      expect(() => controller.uploadFile(undefined as unknown as Express.Multer.File)).toThrow(
-        new HttpException('No file uploaded', HttpStatus.BAD_REQUEST),
-      );
+      expect(() =>
+        controller.uploadFile(undefined as unknown as Express.Multer.File),
+      ).toThrow(new HttpException('No file uploaded', HttpStatus.BAD_REQUEST));
 
       expect(mockFilesService.uploadFile).not.toHaveBeenCalled();
     });

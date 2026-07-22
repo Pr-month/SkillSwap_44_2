@@ -18,7 +18,7 @@ export const dataSource = new DataSource({
   username: process.env.DB_USERNAME || 'admin',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_NAME || 'skill_swap',
-  entities: [City],  
+  entities: [City],
   migrations: ['src/database/migrations/*.{ts,js}'],
   synchronize: false,
 });
