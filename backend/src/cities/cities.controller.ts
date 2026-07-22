@@ -18,7 +18,14 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/enums/users.enums';
 // Подключаем группу Cities в Swagger
-import { ApiCitiesTag, ApiCreateCity, ApiListCities, ApiGetCityById, ApiUpdateCity, ApiDeleteCity } from './decorators/cities-swagger.decorators';
+import {
+  ApiCitiesTag,
+  ApiCreateCity,
+  ApiListCities,
+  ApiGetCityById,
+  ApiUpdateCity,
+  ApiDeleteCity,
+} from './decorators/cities-swagger.decorators';
 
 @Controller('cities')
 @ApiCitiesTag()

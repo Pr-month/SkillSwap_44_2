@@ -12,9 +12,11 @@ describe('AuthController', () => {
   beforeEach(async () => {
     // Создаем пустой объект, который выглядит как экземпляр AuthService
     const mockService = Object.create(AuthService.prototype);
-    
+
     // Проходимся по всем методам и делаем их jest.fn()
-    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(mockService))) {
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(mockService),
+    )) {
       if (typeof mockService[key] === 'function') {
         mockService[key] = jest.fn();
       }
@@ -33,8 +35,12 @@ describe('AuthController', () => {
 
   describe('POST /auth/register', () => {
     it('should call authService.register with DTO', async () => {
-      const dto = { email: 'test@example.com', password: 'secret', role: 'user' } as any;
-      const mockUser = { id: 'user-123', ...dto } as any;
+      const dto = {
+        email: 'test@example.com',
+        password: 'secret',
+        role: 'user',
+      } as any;
+      const mockUser = { id: 'user-123', ...dto };
       authService.register.mockResolvedValue(mockUser);
 
       const result = await controller.register(dto);
@@ -64,12 +70,16 @@ describe('AuthController', () => {
       const result = await controller.login(dto, response);
 
       expect(authService.login).toHaveBeenCalledWith(dto);
-      expect(response.cookie).toHaveBeenCalledWith('refresh_token', 'refresh-token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: ms('7d'),
-      });
+      expect(response.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        'refresh-token',
+        {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: ms('7d'),
+        },
+      );
       // refreshToken не возвращается в теле ответа
       expect(result).toEqual({
         success: mockResult.success,
@@ -81,7 +91,7 @@ describe('AuthController', () => {
 
   describe('POST /auth/logout', () => {
     it('should call logout with userId from req.user.sub', async () => {
-      const req = { user: {sub: 'user-123' }} as any;
+      const req = { user: { sub: 'user-123' } } as any;
       await controller.logout(req);
       expect(authService.logout).toHaveBeenCalledWith('user-123');
     });
@@ -90,9 +100,12 @@ describe('AuthController', () => {
   describe('POST /auth/refresh', () => {
     it('should call refresh with refreshToken from req.user', async () => {
       const req = {
-        user: { sub: 'user-123', refreshToken: 'old-token' }
+        user: { sub: 'user-123', refreshToken: 'old-token' },
       } as any;
-      const mockResult = { accessToken: 'new-access', refreshToken: 'new-refresh' };
+      const mockResult = {
+        accessToken: 'new-access',
+        refreshToken: 'new-refresh',
+      };
       authService.refresh.mockResolvedValue(mockResult);
 
       const result = await controller.refresh(req);

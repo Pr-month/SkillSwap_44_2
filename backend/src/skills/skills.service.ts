@@ -20,7 +20,7 @@ export class SkillsService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly dataSource: DataSource,
-  ) { }
+  ) {}
 
   async create(userId: string, createSkillDto: CreateSkillDto): Promise<Skill> {
     const owner = await this.usersRepository.findOneBy({ id: userId });
@@ -69,7 +69,11 @@ export class SkillsService {
     return skill;
   }
 
-  async update(id: string, updateSkillDto: UpdateSkillDto, userId: string): Promise<Skill> {
+  async update(
+    id: string,
+    updateSkillDto: UpdateSkillDto,
+    userId: string,
+  ): Promise<Skill> {
     // Загружаем навык вместе с владельцем
     const skill = await this.skillsRepository.findOne({
       where: { id },
@@ -185,28 +189,27 @@ export class SkillsService {
   }
 
   async findSimilar(skillId: string, limit = 10): Promise<User[]> {
-  const skill = await this.skillsRepository.findOne({
-    where: { id: skillId },
-    relations: { category: true, owner: true },
-  });
+    const skill = await this.skillsRepository.findOne({
+      where: { id: skillId },
+      relations: { category: true, owner: true },
+    });
 
-  if (!skill || !skill.category) {
-    return [];
+    if (!skill || !skill.category) {
+      return [];
+    }
+
+    const categoryId = skill.category.id;
+    const ownerId = skill.owner.id;
+
+    const users = await this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.skills', 'skill')
+      .where('skill.categoryId = :categoryId', { categoryId })
+      .andWhere('user.id != :ownerId', { ownerId })
+      .distinctOn(['user.id'])
+      .take(limit)
+      .getMany();
+
+    return users;
   }
-
-  const categoryId = skill.category.id;
-  const ownerId = skill.owner.id;
-
-  const users = await this.usersRepository
-    .createQueryBuilder('user')
-    .leftJoinAndSelect('user.skills', 'skill')
-    .where('skill.categoryId = :categoryId', { categoryId })
-    .andWhere('user.id != :ownerId', { ownerId })
-    .distinctOn(['user.id'])
-    .take(limit)
-    .getMany();
-
-  return users;
-}
-
 }

@@ -18,14 +18,16 @@ describe('AuthService', () => {
   const mockJwtConfig: TJwtConfig = {
     accessSecret: 'access-secret',
     refreshSecret: 'refresh-secret',
-    accessExpiresIn: '15m' as ms.StringValue,
-    refreshExpiresIn: '7d' as ms.StringValue,
+    accessExpiresIn: '15m',
+    refreshExpiresIn: '7d',
   };
 
   beforeEach(async () => {
     // --- Автоматическое создание моков для всех методов UsersService ---
     const mockUsersService = Object.create(UsersService.prototype);
-    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(mockUsersService))) {
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(mockUsersService),
+    )) {
       if (typeof mockUsersService[key] === 'function') {
         mockUsersService[key] = jest.fn();
       }
@@ -33,7 +35,9 @@ describe('AuthService', () => {
 
     // --- Автоматическое создание моков для всех методов JwtService ---
     const mockJwtService = Object.create(JwtService.prototype);
-    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(mockJwtService))) {
+    for (const key of Object.getOwnPropertyNames(
+      Object.getPrototypeOf(mockJwtService),
+    )) {
       if (typeof mockJwtService[key] === 'function') {
         mockJwtService[key] = jest.fn();
       }
@@ -85,10 +89,16 @@ describe('AuthService', () => {
 
       const mockHash = jest
         .fn()
-        .mockResolvedValue('hashed-password') as jest.MockedFunction<typeof bcrypt.hash>;
-      
+        .mockResolvedValue('hashed-password') as jest.MockedFunction<
+        typeof bcrypt.hash
+      >;
+
       // Подменяем метод в объекте bcrypt
-      Object.defineProperty(bcrypt, 'hash', { value: mockHash, writable: true, configurable: true });
+      Object.defineProperty(bcrypt, 'hash', {
+        value: mockHash,
+        writable: true,
+        configurable: true,
+      });
 
       const expectedUser: User = createMockUser({
         id: 'new-user-id',
@@ -108,7 +118,7 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith({
         ...dto,
         password: 'hashed-password',
-//        birthdate: expect.any(Date),
+        //        birthdate: expect.any(Date),
       });
       expect(result).toEqual(expectedUser);
     });
@@ -120,12 +130,16 @@ describe('AuthService', () => {
       const user: User = createMockUser({ email: dto.email });
 
       (usersService.findByEmail as jest.Mock).mockResolvedValue(user);
-      
+
       const mockCompare = jest
         .fn()
         .mockResolvedValue(true) as jest.MockedFunction<typeof bcrypt.compare>;
-      
-      Object.defineProperty(bcrypt, 'compare', { value: mockCompare, writable: true, configurable: true });
+
+      Object.defineProperty(bcrypt, 'compare', {
+        value: mockCompare,
+        writable: true,
+        configurable: true,
+      });
 
       jwtService.signAsync
         .mockResolvedValueOnce('access-token')
@@ -136,7 +150,9 @@ describe('AuthService', () => {
       expect(usersService.findByEmail).toHaveBeenCalledWith(dto.email);
       expect(mockCompare).toHaveBeenCalledWith(dto.password, user.password);
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(usersService.update).toHaveBeenCalledWith(user.id, { refreshToken: 'refresh-token' });
+      expect(usersService.update).toHaveBeenCalledWith(user.id, {
+        refreshToken: 'refresh-token',
+      });
 
       expect(result.success).toBe(true);
       expect(result.accessToken).toBe('access-token');
@@ -159,7 +175,11 @@ describe('AuthService', () => {
   describe('refresh', () => {
     it('should refresh tokens when refresh token is valid and matches DB', async () => {
       const refreshToken = 'old-refresh-token';
-      const payload = { sub: 'user-123', email: 'x@x.com', role: UserRole.USER };
+      const payload = {
+        sub: 'user-123',
+        email: 'x@x.com',
+        role: UserRole.USER,
+      };
       const user: User = createMockUser({ id: payload.sub, refreshToken });
 
       jwtService.verifyAsync.mockResolvedValue(payload);
@@ -176,7 +196,9 @@ describe('AuthService', () => {
       });
       expect(usersService.findOne).toHaveBeenCalledWith(payload.sub);
       expect(user.refreshToken).toEqual(refreshToken);
-      expect(usersService.update).toHaveBeenCalledWith(user.id, { refreshToken: 'new-refresh' });
+      expect(usersService.update).toHaveBeenCalledWith(user.id, {
+        refreshToken: 'new-refresh',
+      });
       expect(result.accessToken).toBe('new-access');
       expect(result.refreshToken).toBe('new-refresh');
     });
@@ -184,9 +206,12 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException when refresh token does not match DB', async () => {
       const refreshToken = 'stolen-refresh-token';
       const payload = { sub: 'user-123' };
-      const user: User = createMockUser({ id: payload.sub, refreshToken: 'different-token' });
+      const user: User = createMockUser({
+        id: payload.sub,
+        refreshToken: 'different-token',
+      });
 
-      jwtService.verifyAsync.mockResolvedValue(payload as any);
+      jwtService.verifyAsync.mockResolvedValue(payload);
       (usersService.findOne as jest.Mock).mockResolvedValue(user);
 
       await expect(service.refresh(refreshToken)).rejects.toThrow(
@@ -207,7 +232,9 @@ describe('AuthService', () => {
     it('should clear refreshToken for user', async () => {
       const id = 'user-123';
       await service.logout(id);
-      expect(usersService.update).toHaveBeenCalledWith(id, { refreshToken: null });
+      expect(usersService.update).toHaveBeenCalledWith(id, {
+        refreshToken: null,
+      });
     });
   });
 });

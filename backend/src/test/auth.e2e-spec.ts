@@ -1,13 +1,17 @@
-import { INestApplication, ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm'; 
+import { DataSource } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
-import request from 'supertest'; 
+import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { User } from '../users/entities/user.entity';
-import { UserGender } from '../users/enums/users.enums'; 
-import { AllExceptionsFilter } from '../common/all-exception.filter'; 
+import { UserGender } from '../users/enums/users.enums';
+import { AllExceptionsFilter } from '../common/all-exception.filter';
 
 describe('Auth (E2E)', () => {
   let app: INestApplication;
@@ -16,16 +20,13 @@ describe('Auth (E2E)', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        AppModule,
-        TypeOrmModule.forFeature([User]),
-      ],
+      imports: [AppModule, TypeOrmModule.forFeature([User])],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     dataSource = moduleFixture.get(DataSource);
 
-    // ГЛОБАЛЬНЫЕ КОМПОНЕНТЫ     
+    // ГЛОБАЛЬНЫЕ КОМПОНЕНТЫ
     // 1. Валидация DTO (whitelist, transform, forbidNonWhitelisted)
     app.useGlobalPipes(
       new ValidationPipe({
@@ -36,7 +37,9 @@ describe('Auth (E2E)', () => {
     );
 
     // 2. Сериализация (скрытие полей, например password)
-    app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+    app.useGlobalInterceptors(
+      new ClassSerializerInterceptor(app.get(Reflector)),
+    );
 
     // 3. Обработка ошибок через фильтр
     app.useGlobalFilters(new AllExceptionsFilter());
@@ -56,7 +59,7 @@ describe('Auth (E2E)', () => {
   };
 
   beforeEach(async () => {
-    // Очищаем БД перед КАЖДЫМ тестом 
+    // Очищаем БД перед КАЖДЫМ тестом
     await clearDb();
   });
 
@@ -68,7 +71,7 @@ describe('Auth (E2E)', () => {
         password: 'strongPassword123',
         birthdate: '1990-01-01',
         city: 'Moscow',
-        gender: UserGender.MALE, 
+        gender: UserGender.MALE,
       };
 
       const res = await httpRequest
@@ -79,14 +82,14 @@ describe('Auth (E2E)', () => {
       expect(res.body).toHaveProperty('accessToken');
       expect(res.body).toHaveProperty('refreshToken');
       expect(res.body.user).toHaveProperty('id');
-      
+
       const userRepo = dataSource.getRepository(User);
       const user = await userRepo.findOne({
         where: { email: registerDto.email },
       });
 
       expect(user).toBeDefined();
-      expect(user!.password).not.toBe(registerDto.password); 
+      expect(user!.password).not.toBe(registerDto.password);
       expect(user!.gender).toBe(UserGender.MALE);
     });
 
@@ -103,7 +106,10 @@ describe('Auth (E2E)', () => {
         })
         .expect(201);
 
-      const loginDto = { email: 'login-test@example.com', password: 'password123' };
+      const loginDto = {
+        email: 'login-test@example.com',
+        password: 'password123',
+      };
       const res = await httpRequest
         .post('/auth/login')
         .send(loginDto)
@@ -111,11 +117,13 @@ describe('Auth (E2E)', () => {
 
       expect(res.body).toHaveProperty('accessToken');
 
-      // Безопасная проверка куки 
+      // Безопасная проверка куки
       const setCookieHeader = res.headers['set-cookie'];
       expect(setCookieHeader).toBeDefined();
 
-      const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+      const cookies = Array.isArray(setCookieHeader)
+        ? setCookieHeader
+        : [setCookieHeader];
       expect(
         cookies.some((cookie: string) => cookie.startsWith('refreshToken=')),
       ).toBe(true);

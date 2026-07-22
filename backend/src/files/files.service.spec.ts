@@ -39,9 +39,7 @@ describe('FilesService', () => {
     it('should throw HttpException when an error occurs', () => {
       const file = null as unknown as Express.Multer.File;
 
-      expect(() => service.uploadFile(file)).toThrow(
-        'Failed to save file',
-      );
+      expect(() => service.uploadFile(file)).toThrow('Failed to save file');
     });
   });
 });
