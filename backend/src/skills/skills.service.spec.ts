@@ -170,7 +170,7 @@ describe('SkillsService', () => {
       } as Skill;
 
       skillsRepository.findOne.mockResolvedValue(skill);
-      skillsRepository.save.mockImplementation(async (s) => s);
+      skillsRepository.save.mockResolvedValue(skill);
 
       const result = await service.update(
         'skill-id',
@@ -288,7 +288,7 @@ describe('SkillsService', () => {
     it('should remove skill from favorites and return user', async () => {
       skillsRepository.findOne.mockResolvedValue(skill);
       usersRepository.findOne.mockResolvedValue(user);
-      usersRepository.save.mockImplementation(async (u) => u);
+      usersRepository.save.mockResolvedValue(user);
 
       const result = await service.removeFromFavorites('skill-id', 'user-id');
 
@@ -321,7 +321,7 @@ describe('SkillsService', () => {
 
       skillsRepository.findOne.mockResolvedValue(skill);
       usersRepository.findOne.mockResolvedValue(userWithout);
-      usersRepository.save.mockImplementation(async (u) => u);
+      usersRepository.save.mockResolvedValue(user);
 
       const result = await service.removeFromFavorites('skill-id', 'user-id');
 
