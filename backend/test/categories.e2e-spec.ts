@@ -11,6 +11,17 @@ import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '../src/common/all-exception.filter';
 import { CategoriesData } from '../src/seeding/data/category.data';
 
+interface LoginResponse {
+  accessToken: string;
+}
+
+interface CategoryItem {
+  id: string;
+  name: string;
+  parentId: string | null;
+  children: CategoryItem[];
+}
+
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@skillswap.ru';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? 'AdminSuper2024!';
 
@@ -25,7 +36,6 @@ describe('CategoriesController (e2e)', () => {
   let userToken: string;
 
   let seededRootCategoryId: string;
-
   let createdCategoryId: string;
 
   beforeAll(async () => {
@@ -49,18 +59,22 @@ describe('CategoriesController (e2e)', () => {
 
     await app.init();
 
-    const adminLogin = await request(app.getHttpServer())
+    const adminLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
-    adminToken = adminLogin.body.accessToken as string;
+    const adminLoginBody = adminLoginRes.body as LoginResponse;
+    adminToken = adminLoginBody.accessToken;
 
-    const userLogin = await request(app.getHttpServer())
+    const userLoginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: USER_EMAIL, password: USER_PASSWORD });
-    userToken = userLogin.body.accessToken as string;
+    const userLoginBody = userLoginRes.body as LoginResponse;
+    userToken = userLoginBody.accessToken;
 
     const categoriesRes = await request(app.getHttpServer()).get('/categories');
-    seededRootCategoryId = (categoriesRes.body[0]?.id as string) ?? '';
+    const categoriesBody = categoriesRes.body as CategoryItem[];
+
+    seededRootCategoryId = categoriesBody[0]?.id ?? '';
   });
 
   afterAll(async () => {
@@ -73,18 +87,18 @@ describe('CategoriesController (e2e)', () => {
         .get('/categories')
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThanOrEqual(
-        CategoriesData.length,
-      );
+      const body = response.body as CategoryItem[];
 
-      const category = response.body[0];
+      expect(Array.isArray(body)).toBe(true);
+      expect(body.length).toBeGreaterThanOrEqual(CategoriesData.length);
+
+      const category = body[0];
       expect(category).toHaveProperty('id');
       expect(category).toHaveProperty('name');
       expect(Array.isArray(category.children)).toBe(true);
       expect(category.parentId).toBeNull();
 
-      const returnedNames = new Set(response.body.map((c: any) => c.name));
+      const returnedNames = new Set(body.map((c) => c.name));
       for (const expected of CategoriesData) {
         expect(returnedNames).toContain(expected.name);
       }
@@ -97,12 +111,12 @@ describe('CategoriesController (e2e)', () => {
         .get(`/categories/${seededRootCategoryId}`)
         .expect(200);
 
-      expect(response.body).toMatchObject({
-        id: seededRootCategoryId,
-        name: expect.any(String),
-      });
-      expect(Array.isArray(response.body.children)).toBe(true);
-      expect(response.body.children.length).toBeGreaterThan(0);
+      const body = response.body as CategoryItem;
+
+      expect(body.id).toBe(seededRootCategoryId);
+      expect(typeof body.name).toBe('string');
+      expect(Array.isArray(body.children)).toBe(true);
+      expect(body.children.length).toBeGreaterThan(0);
     });
 
     it('404 — returns 404 for a non-existent UUID', async () => {
@@ -151,13 +165,14 @@ describe('CategoriesController (e2e)', () => {
         .send({ name: 'E2E: Тестовая категория' })
         .expect(201);
 
-      expect(response.body).toMatchObject({
-        id: expect.any(String),
+      const body = response.body as CategoryItem;
+
+      expect(body).toMatchObject({
         name: 'E2E: Тестовая категория',
       });
-      expect(response.body.parentId ?? null).toBeNull();
+      expect(body.parentId ?? null).toBeNull();
 
-      createdCategoryId = response.body.id as string;
+      createdCategoryId = body.id;
     });
 
     it('201 — admin creates a child category under the root category', async () => {
@@ -170,8 +185,9 @@ describe('CategoriesController (e2e)', () => {
         })
         .expect(201);
 
-      expect(response.body).toMatchObject({
-        id: expect.any(String),
+      const body = response.body as CategoryItem;
+
+      expect(body).toMatchObject({
         name: 'E2E: Тестовая подкатегория',
         parentId: createdCategoryId,
       });
@@ -225,7 +241,9 @@ describe('CategoriesController (e2e)', () => {
         .send({ name: 'E2E: Обновлённая категория' })
         .expect(200);
 
-      expect(response.body).toMatchObject({
+      const body = response.body as CategoryItem;
+
+      expect(body).toMatchObject({
         id: createdCategoryId,
         name: 'E2E: Обновлённая категория',
       });
@@ -265,7 +283,16 @@ describe('CategoriesController (e2e)', () => {
         .get(`/categories/${createdCategoryId}`)
         .expect(200);
 
-      const childId = categoryResponse.body.children[0]?.id as string;
+      const body = categoryResponse.body as CategoryItem;
+      const child = body.children[0];
+
+      if (!child) {
+        throw new Error('Expected at least one child category');
+      }
+
+      const childItem = child;
+      const childId = childItem.id;
+
       expect(childId).toBeDefined();
 
       await request(app.getHttpServer())
