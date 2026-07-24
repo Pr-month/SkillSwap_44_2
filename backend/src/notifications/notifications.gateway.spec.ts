@@ -1,8 +1,10 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+﻿/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+import { Test, TestingModule } from '@nestjs/testing';
 import { JwtModule } from '@nestjs/jwt';
 import { NotificationsGateway } from './notifications.gateway';
 import { WsJwtGuard } from '../auth/guards/ws-jwt.guard';
 import { JwtPayload } from '../auth/auth.types';
+import { UserRole } from '../users/enums/users.enums';
 
 describe('NotificationsGateway', () => {
   let gateway: NotificationsGateway;
@@ -37,8 +39,9 @@ describe('NotificationsGateway', () => {
       const payload: JwtPayload = {
         sub: 'user-id',
         email: 'test@test.com',
-        role: 'USER' as any,
+        role: UserRole.USER,
       };
+
       const client = {
         handshake: { query: { token: 'valid-token' } },
         data: {},
@@ -51,7 +54,7 @@ describe('NotificationsGateway', () => {
       await gateway.handleConnection(client);
 
       expect(mockWsJwtGuard.verify).toHaveBeenCalledWith('valid-token');
-      expect(client.data.userId).toBe('user-id');
+      expect((client.data as Record<string, unknown>).userId).toBe('user-id');
       expect(client.join).toHaveBeenCalledWith('user-id');
       expect(client.disconnect).not.toHaveBeenCalled();
     });
@@ -93,8 +96,9 @@ describe('NotificationsGateway', () => {
       const payload: JwtPayload = {
         sub: 'user-id',
         email: 'test@test.com',
-        role: 'USER' as any,
+        role: UserRole.USER,
       };
+
       const client = {
         handshake: { query: { token: 'valid-token' } },
         data: null,
@@ -106,7 +110,7 @@ describe('NotificationsGateway', () => {
 
       await gateway.handleConnection(client);
 
-      expect(client.data.userId).toBe('user-id');
+      expect((client.data as Record<string, unknown>).userId).toBe('user-id');
       expect(client.join).toHaveBeenCalledWith('user-id');
     });
   });
@@ -114,7 +118,6 @@ describe('NotificationsGateway', () => {
   describe('handleDisconnect', () => {
     it('should not throw', () => {
       const client = {} as any;
-
       expect(() => gateway.handleDisconnect(client)).not.toThrow();
     });
   });
