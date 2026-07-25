@@ -3,6 +3,16 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
 
+interface MulterError extends Error {
+  code: string;
+}
+
+function createMulterError(message: string, code: string): MulterError {
+  const error = new Error(message) as MulterError;
+  error.code = code;
+  return error;
+}
+
 describe('FilesController', () => {
   let controller: FilesController;
 
@@ -62,8 +72,7 @@ describe('FilesController', () => {
     });
 
     it('should throw 413 when file size exceeds limit (LIMIT_FILE_SIZE)', () => {
-      const error = new Error('File too large');
-      (error as any).code = 'LIMIT_FILE_SIZE';
+      const error = createMulterError('File too large', 'LIMIT_FILE_SIZE');
 
       mockFilesService.uploadFile.mockImplementation(() => {
         throw error;
@@ -77,8 +86,7 @@ describe('FilesController', () => {
     });
 
     it('should throw 415 when file extension is not allowed (EXTENSION)', () => {
-      const error = new Error('Invalid extension');
-      (error as any).code = 'EXTENSION';
+      const error = createMulterError('Invalid extension', 'EXTENSION');
 
       mockFilesService.uploadFile.mockImplementation(() => {
         throw error;
