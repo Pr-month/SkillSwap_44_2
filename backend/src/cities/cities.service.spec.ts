@@ -111,19 +111,15 @@ describe('CitiesService', () => {
       });
     });
 
-    // ИСПРАВЛЕНО: Сначала типизируем calls, потом берем данные
     it('should filter by name using LIKE', async () => {
       mockRepository.find.mockResolvedValue([]);
 
       await service.findAll({ name: 'Моск' });
 
-      // 1. Сохраняем вызовы в переменную с правильным типом
       const calls = mockRepository.find.mock.calls as [FindManyOptions<City>][];
 
-      // 2. Проверяем, что вызов вообще был
       expect(calls).toHaveLength(1);
 
-      // 3. Берем аргументы первого вызова (теперь это безопасно, так как calls типизирован)
       const callArgs = calls[0][0];
 
       expect(callArgs.order).toEqual({ name: 'ASC' });

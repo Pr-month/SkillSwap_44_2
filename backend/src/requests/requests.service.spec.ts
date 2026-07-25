@@ -309,7 +309,6 @@ describe('RequestsService', () => {
 
       mockRequestsRepository.findOne.mockResolvedValue(request);
 
-      // ✅
       mockRequestsRepository.save.mockResolvedValue(request);
 
       const result = await service.rejectRequest('req-1', 'receiver-id');
@@ -370,7 +369,6 @@ describe('RequestsService', () => {
 
       mockRequestsRepository.findOne.mockResolvedValue(request);
 
-      // ✅
       mockRequestsRepository.save.mockResolvedValue({
         ...request,
         isRead: true,

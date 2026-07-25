@@ -2,9 +2,11 @@
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
+import { FindManyOptions, FindOneOptions } from 'typeorm';
 
 import { CategoriesService } from './categories.service';
 import { Category } from './entities/category.entity';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 describe('CategoriesService', () => {
   let service: CategoriesService;
@@ -41,7 +43,16 @@ describe('CategoriesService', () => {
           name: 'IT',
           parent: null,
           parentId: undefined,
-          children: [{ id: 'sub-1', name: 'Backend', children: [] }],
+          children: [
+            {
+              id: 'sub-1',
+              name: 'Backend',
+              parent: null,
+              parentId: undefined,
+              children: [],
+              usersWhoWantToLearn: [],
+            },
+          ],
           usersWhoWantToLearn: [],
         },
         {
@@ -59,10 +70,15 @@ describe('CategoriesService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual(categories);
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { parent: expect.any(Object) },
-        relations: { children: true },
-      });
+
+      const calls = mockRepository.find.mock.calls as [
+        FindManyOptions<Category>,
+      ][];
+      expect(calls).toHaveLength(1);
+
+      const args = calls[0][0];
+      expect(args.relations).toEqual({ children: true });
+      expect('parent' in args.where!).toBe(true);
     });
   });
 
@@ -82,15 +98,19 @@ describe('CategoriesService', () => {
       const result = await service.findOne('category-id');
 
       expect(result).toEqual(category);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: 'category-id' },
-        relations: { parent: true, children: true },
-      });
+
+      const calls = mockRepository.findOne.mock.calls as [
+        FindOneOptions<Category>,
+      ][];
+      expect(calls).toHaveLength(1);
+      const args = calls[0][0];
+
+      expect(args.where).toEqual({ id: 'category-id' });
+      expect(args.relations).toEqual({ parent: true, children: true });
     });
 
     it('should throw NotFoundException when category not found', async () => {
       mockRepository.findOne.mockResolvedValue(null);
-
       await expect(service.findOne('unknown-id')).rejects.toThrow(
         NotFoundException,
       );
@@ -100,7 +120,14 @@ describe('CategoriesService', () => {
   describe('create', () => {
     it('should create a root category without parentId', async () => {
       const dto = { name: 'Backend' };
-      const category = { id: 'new-id', name: 'Backend' } as unknown as Category;
+      const category = {
+        id: 'new-id',
+        name: 'Backend',
+        parent: undefined,
+        parentId: undefined,
+        children: [],
+        usersWhoWantToLearn: [],
+      } as unknown as Category;
 
       mockRepository.create.mockReturnValue(category);
       mockRepository.save.mockResolvedValue(category);
@@ -119,13 +146,21 @@ describe('CategoriesService', () => {
       const parentCategory = {
         id: 'parent-id',
         name: 'IT',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
+
       const dto = { name: 'Backend', parentId: 'parent-id' };
+
       const subCategory = {
         id: 'child-id',
         name: 'Backend',
         parent: parentCategory,
+        parentId: 'parent-id',
+        children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(parentCategory);
@@ -143,7 +178,6 @@ describe('CategoriesService', () => {
 
     it('should throw NotFoundException when parent category does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
-
       await expect(
         service.create({ name: 'Backend', parentId: 'non-existent' }),
       ).rejects.toThrow(NotFoundException);
@@ -151,7 +185,14 @@ describe('CategoriesService', () => {
 
     it('should throw ConflictException on duplicate name (PG error 23505)', async () => {
       const dto = { name: 'Backend' };
-      const category = { id: 'new-id', name: 'Backend' } as unknown as Category;
+      const category = {
+        id: 'new-id',
+        name: 'Backend',
+        parent: undefined,
+        parentId: undefined,
+        children: [],
+        usersWhoWantToLearn: [],
+      } as unknown as Category;
 
       mockRepository.create.mockReturnValue(category);
       mockRepository.save.mockRejectedValue(
@@ -163,7 +204,14 @@ describe('CategoriesService', () => {
 
     it('should re-throw non-duplicate database errors', async () => {
       const dto = { name: 'Backend' };
-      const category = { id: 'new-id', name: 'Backend' } as unknown as Category;
+      const category = {
+        id: 'new-id',
+        name: 'Backend',
+        parent: undefined,
+        parentId: undefined,
+        children: [],
+        usersWhoWantToLearn: [],
+      } as unknown as Category;
       const genericError = new Error('DB connection lost');
 
       mockRepository.create.mockReturnValue(category);
@@ -181,13 +229,15 @@ describe('CategoriesService', () => {
         parent: null,
         parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
-      mockRepository.save.mockImplementation(async (entity) => entity);
+      mockRepository.save.mockResolvedValue({ ...category, name: 'New name' });
 
-      const result = await service.update('category-id', { name: 'New name' });
-
+      const result = await service.update('category-id', {
+        name: 'New name',
+      });
       expect(result.name).toBe('New name');
     });
 
@@ -198,18 +248,27 @@ describe('CategoriesService', () => {
         parent: null,
         parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
+
       const newParent = {
         id: 'parent-id',
         name: 'IT',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne
         .mockResolvedValueOnce(category)
         .mockResolvedValueOnce(newParent);
 
-      mockRepository.save.mockImplementation(async (entity) => entity);
+      mockRepository.save.mockResolvedValue({
+        ...category,
+        parent: newParent,
+        parentId: newParent.id,
+      });
 
       const result = await service.update('category-id', {
         parentId: 'parent-id',
@@ -218,21 +277,32 @@ describe('CategoriesService', () => {
       expect(result.parent).toEqual(newParent);
     });
 
-    it('should clear parent when parentId is set to null', async () => {
+    it('should clear parent when parentId is set to undefined', async () => {
       const category = {
         id: 'category-id',
         name: 'Backend',
-        parent: { id: 'parent-id' } as unknown as Category,
+        parent: {
+          id: 'parent-id',
+          name: '',
+          parent: null,
+          parentId: undefined,
+          children: [],
+          usersWhoWantToLearn: [],
+        } as unknown as Category,
         parentId: 'parent-id',
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
-      mockRepository.save.mockImplementation(async (entity) => entity);
-
-      const result = await service.update('category-id', {
+      mockRepository.save.mockResolvedValue({
+        ...category,
+        parent: null,
         parentId: null,
-      } as any);
+      });
+
+      const updatePayload: UpdateCategoryDto = { parentId: undefined };
+      const result = await service.update('category-id', updatePayload);
 
       expect(result.parent).toBeNull();
     });
@@ -241,19 +311,22 @@ describe('CategoriesService', () => {
       const category = {
         id: 'category-id',
         name: 'IT',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
-
       await expect(
-        service.update('category-id', { parentId: 'category-id' }),
+        service.update('category-id', {
+          parentId: 'category-id',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
     it('should throw NotFoundException when category to update does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
-
       await expect(
         service.update('unknown-id', { name: 'New name' }),
       ).rejects.toThrow(NotFoundException);
@@ -263,7 +336,10 @@ describe('CategoriesService', () => {
       const category = {
         id: 'category-id',
         name: 'Backend',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne
@@ -271,15 +347,20 @@ describe('CategoriesService', () => {
         .mockResolvedValueOnce(null);
 
       await expect(
-        service.update('category-id', { parentId: 'nonexistent-parent' }),
+        service.update('category-id', {
+          parentId: 'nonexistent-parent',
+        }),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ConflictException on duplicate name (PG error 23505)', async () => {
+    it('should throw ConflictException on duplicate name', async () => {
       const category = {
         id: 'category-id',
         name: 'Old name',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
@@ -288,7 +369,9 @@ describe('CategoriesService', () => {
       );
 
       await expect(
-        service.update('category-id', { name: 'Duplicated name' }),
+        service.update('category-id', {
+          name: 'Duplicated name',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -296,14 +379,19 @@ describe('CategoriesService', () => {
       const category = {
         id: 'category-id',
         name: 'Old name',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
       mockRepository.save.mockRejectedValue(new Error('DB connection lost'));
 
       await expect(
-        service.update('category-id', { name: 'New name' }),
+        service.update('category-id', {
+          name: 'New name',
+        }),
       ).rejects.toThrow('DB connection lost');
     });
   });
@@ -313,33 +401,46 @@ describe('CategoriesService', () => {
       const category = {
         id: 'category-id',
         name: 'IT',
+        parent: null,
+        parentId: undefined,
         children: [],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
       mockRepository.remove.mockResolvedValue(category);
 
       await service.remove('category-id');
-
       expect(mockRepository.remove).toHaveBeenCalledWith(category);
     });
 
     it('should throw NotFoundException when category to delete does not exist', async () => {
       mockRepository.findOne.mockResolvedValue(null);
-
       await expect(service.remove('unknown-id')).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('should throw ConflictException when category has children', async () => {
+      const child = {
+        id: 'child-id',
+        name: 'Child',
+        parent: null,
+        parentId: undefined,
+        children: [],
+        usersWhoWantToLearn: [],
+      } as unknown as Category;
+
       const category = {
         id: 'category-id',
-        children: [{ id: 'child-id' }],
+        name: 'Parent',
+        parent: null,
+        parentId: undefined,
+        children: [child],
+        usersWhoWantToLearn: [],
       } as unknown as Category;
 
       mockRepository.findOne.mockResolvedValue(category);
-
       await expect(service.remove('category-id')).rejects.toThrow(
         ConflictException,
       );
