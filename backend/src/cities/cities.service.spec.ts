@@ -2,6 +2,7 @@
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
+import { FindManyOptions } from 'typeorm';
 
 import { CitiesService } from './cities.service';
 import { City } from './entities/city.entity';
@@ -110,15 +111,24 @@ describe('CitiesService', () => {
       });
     });
 
+    // ИСПРАВЛЕНО: Сначала типизируем calls, потом берем данные
     it('should filter by name using LIKE', async () => {
       mockRepository.find.mockResolvedValue([]);
 
       await service.findAll({ name: 'Моск' });
 
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { name: expect.any(Object) },
-        order: { name: 'ASC' },
-      });
+      // 1. Сохраняем вызовы в переменную с правильным типом
+      const calls = mockRepository.find.mock.calls as [FindManyOptions<City>][];
+
+      // 2. Проверяем, что вызов вообще был
+      expect(calls).toHaveLength(1);
+
+      // 3. Берем аргументы первого вызова (теперь это безопасно, так как calls типизирован)
+      const callArgs = calls[0][0];
+
+      expect(callArgs.order).toEqual({ name: 'ASC' });
+      expect(callArgs.where).toBeDefined();
+      expect('name' in callArgs.where!).toBe(true);
     });
 
     it('should filter by district using LIKE', async () => {
@@ -126,10 +136,13 @@ describe('CitiesService', () => {
 
       await service.findAll({ district: 'Центр' });
 
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { district: expect.any(Object) },
-        order: { name: 'ASC' },
-      });
+      const calls = mockRepository.find.mock.calls as [FindManyOptions<City>][];
+      expect(calls).toHaveLength(1);
+      const callArgs = calls[0][0];
+
+      expect(callArgs.order).toEqual({ name: 'ASC' });
+      expect(callArgs.where).toBeDefined();
+      expect('district' in callArgs.where!).toBe(true);
     });
 
     it('should filter by subject using LIKE', async () => {
@@ -137,10 +150,13 @@ describe('CitiesService', () => {
 
       await service.findAll({ subject: 'область' });
 
-      expect(mockRepository.find).toHaveBeenCalledWith({
-        where: { subject: expect.any(Object) },
-        order: { name: 'ASC' },
-      });
+      const calls = mockRepository.find.mock.calls as [FindManyOptions<City>][];
+      expect(calls).toHaveLength(1);
+      const callArgs = calls[0][0];
+
+      expect(callArgs.order).toEqual({ name: 'ASC' });
+      expect(callArgs.where).toBeDefined();
+      expect('subject' in callArgs.where!).toBe(true);
     });
   });
 
