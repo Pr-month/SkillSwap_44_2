@@ -29,7 +29,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         exceptionResponse !== null
       ) {
         const responseObj = exceptionResponse as Record<string, any>;
-        message = responseObj.message ?? exception.message;
+        if (
+          'message' in responseObj &&
+          typeof responseObj.message === 'string'
+        ) {
+          message = responseObj.message;
+        } else {
+          message = exception.message;
+        }
       } else {
         message = exception.message;
       }
