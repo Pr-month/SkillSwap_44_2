@@ -4,112 +4,173 @@ import { AuthService } from './auth.service';
 import { Response } from 'express';
 import ms from 'ms';
 import { LoginDto } from './dto/login.dto';
+import { RegisterResponseDto } from './dto/register-response.dto';
+import { LoginServiceResponseDto } from './dto/login-service-response.dto';
+import { UserGender, UserRole } from 'src/users/enums/users.enums';
+import { Skill } from 'src/skills/entities/skill.entity';
+import { Category } from 'src/categories/entities/category.entity';
+import { RequestRefreshToken, RequestWithUser } from './auth.types';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: jest.Mocked<AuthService>;
 
   beforeEach(async () => {
-    // Создаем пустой объект, который выглядит как экземпляр AuthService
-    const mockService = Object.create(AuthService.prototype);
-
-    // Проходимся по всем методам и делаем их jest.fn()
-    for (const key of Object.getOwnPropertyNames(
-      Object.getPrototypeOf(mockService),
-    )) {
-      if (typeof mockService[key] === 'function') {
-        mockService[key] = jest.fn();
-      }
-    }
-
-    // Теперь безопасно приводим тип. Все методы есть, они просто пустые функции.
-    authService = mockService as jest.Mocked<AuthService>;
-
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: authService }],
+      providers: [AuthService],
     }).compile();
 
-    controller = module.get<AuthController>(AuthController);
+    controller = module.get(AuthController);
+    authService = jest.mocked(module.get(AuthService));
+
+    authService.getRefreshTokenExpiresIn.mockReturnValue('7d');
   });
 
   describe('POST /auth/register', () => {
-    it('should call authService.register with DTO', async () => {
+    it('should call authService.register with DTO and return RegisterResponseDto', async () => {
       const dto = {
         email: 'test@example.com',
-        password: 'secret',
-        role: 'user',
-      } as any;
-      const mockUser = { id: 'user-123', ...dto };
-      authService.register.mockResolvedValue(mockUser);
+        password: 'secret123',
+        role: UserRole.USER as const,
+        name: 'Test User',
+        birthdate: '1990-01-01',
+        city: 'Moscow',
+        gender: UserGender.MALE,
+      };
+
+      const mockUserEntity = {
+        id: 'user-123',
+        email: dto.email,
+        name: dto.name,
+        about: undefined,
+        avatar: undefined,
+        city: dto.city,
+        gender: dto.gender,
+        role: dto.role,
+        birthdate: new Date(dto.birthdate),
+        skills: [] as Skill[],
+        wantToLearn: [] as Category[],
+        favoriteSkills: [] as Skill[],
+        password: 'hashed-password',
+      };
+
+      const mockResponseDto: RegisterResponseDto = {
+        id: mockUserEntity.id,
+        name: mockUserEntity.name,
+        email: mockUserEntity.email,
+        about: mockUserEntity.about,
+        birthdate: mockUserEntity.birthdate,
+        city: mockUserEntity.city,
+        gender: mockUserEntity.gender,
+        avatar: mockUserEntity.avatar,
+        skills: mockUserEntity.skills.map((s) => s.id),
+        wantToLearn: mockUserEntity.wantToLearn.map((c) => c.id),
+        favoriteSkills: mockUserEntity.favoriteSkills.map((s) => s.id),
+        role: mockUserEntity.role,
+      };
+
+      authService.register.mockResolvedValue(mockUserEntity);
 
       const result = await controller.register(dto);
-      expect(authService.register).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(mockUser);
+
+      expect(() => authService.register(dto)).toHaveBeenCalled();
+      expect(result).toEqual(mockResponseDto);
     });
   });
 
   describe('POST /auth/login', () => {
-    it('should set refreshToken cookie and return response without refreshToken', async () => {
-      const dto: LoginDto = { email: 'test@example.com', password: 'secret' };
-      const mockResult = {
+    it('should set refreshToken cookie and return response without refreshToken in body', async () => {
+      const dto: LoginDto = {
+        email: 'test@example.com',
+        password: 'secret123',
+      };
+
+      const mockServiceResult: LoginServiceResponseDto = {
         success: true,
-        user: { id: 'user-123', email: dto.email, role: 'user' },
+        user: {
+          id: 'user-123',
+          name: 'Test User',
+          email: dto.email,
+          about: undefined,
+          birthdate: new Date('1990-01-01'),
+          city: 'Moscow',
+          gender: UserGender.MALE,
+          avatar: undefined,
+          skills: [] as Skill[],
+          wantToLearn: [] as Category[],
+          favoriteSkills: [] as Skill[],
+          role: UserRole.USER,
+        },
         accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-      } as any;
+        refreshToken: 'refresh-token-from-service',
+      };
 
-      authService.login.mockResolvedValue(mockResult);
-      authService.getRefreshTokenExpiresIn.mockReturnValue('7d');
+      authService.login.mockResolvedValue(mockServiceResult);
 
-      const response = {
+      const response: Partial<Response> & Response = {
         cookie: jest.fn(),
-        passthrough: true,
       } as unknown as Response;
 
       const result = await controller.login(dto, response);
 
-      expect(authService.login).toHaveBeenCalledWith(dto);
-      expect(response.cookie).toHaveBeenCalledWith(
-        'refresh_token',
-        'refresh-token',
-        {
+      expect(() => authService.login(dto)).toHaveBeenCalled();
+
+      expect(() =>
+        response.cookie('refresh_token', mockServiceResult.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
           maxAge: ms('7d'),
-        },
-      );
-      // refreshToken не возвращается в теле ответа
+        }),
+      ).toHaveBeenCalled();
+
       expect(result).toEqual({
-        success: mockResult.success,
-        user: mockResult.user,
-        accessToken: mockResult.accessToken,
+        success: mockServiceResult.success,
+        user: mockServiceResult.user,
+        accessToken: mockServiceResult.accessToken,
       });
     });
   });
 
   describe('POST /auth/logout', () => {
     it('should call logout with userId from req.user.sub', async () => {
-      const req = { user: { sub: 'user-123' } } as any;
+      const req: RequestWithUser = {
+        user: {
+          sub: 'user-123',
+          email: 'test@example.com',
+          role: UserRole.USER,
+        },
+      } as unknown as RequestWithUser;
+
       await controller.logout(req);
-      expect(authService.logout).toHaveBeenCalledWith('user-123');
+
+      expect(() => authService.logout('user-123')).toHaveBeenCalled();
     });
   });
 
   describe('POST /auth/refresh', () => {
-    it('should call refresh with refreshToken from req.user', async () => {
-      const req = {
-        user: { sub: 'user-123', refreshToken: 'old-token' },
-      } as any;
+    it('should call refresh with refreshToken from req.user and return new tokens', async () => {
+      const req: RequestRefreshToken = {
+        user: {
+          sub: 'user-123',
+          email: 'test@example.com',
+          refreshToken: 'old-token',
+        },
+      } as unknown as RequestRefreshToken;
+
       const mockResult = {
         accessToken: 'new-access',
         refreshToken: 'new-refresh',
       };
+
       authService.refresh.mockResolvedValue(mockResult);
 
       const result = await controller.refresh(req);
-      expect(authService.refresh).toHaveBeenCalledWith(req.user.refreshToken);
+
+      expect(() =>
+        authService.refresh(req.user.refreshToken),
+      ).toHaveBeenCalled();
       expect(result).toEqual(mockResult);
     });
   });

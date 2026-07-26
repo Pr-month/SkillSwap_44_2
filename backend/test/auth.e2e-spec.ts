@@ -4,17 +4,30 @@ import {
   ClassSerializerInterceptor,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { App } from 'supertest/types';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { User } from '../users/entities/user.entity';
-import { UserGender } from '../users/enums/users.enums';
-import { AllExceptionsFilter } from '../common/all-exception.filter';
+import { AppModule } from '../src/app.module';
+import { User } from '../src/users/entities/user.entity';
+import { UserGender } from '../src/users/enums/users.enums';
+import { AllExceptionsFilter } from '../src/common/all-exception.filter';
+
+interface RegisterResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: {
+    id: string;
+  };
+}
+
+interface LoginResponse {
+  accessToken: string;
+}
 
 describe('Auth (E2E)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let httpRequest: ReturnType<typeof request>;
   let dataSource: DataSource;
 
@@ -79,9 +92,11 @@ describe('Auth (E2E)', () => {
         .send(registerDto)
         .expect(201);
 
-      expect(res.body).toHaveProperty('accessToken');
-      expect(res.body).toHaveProperty('refreshToken');
-      expect(res.body.user).toHaveProperty('id');
+      const data = res.body as RegisterResponse;
+
+      expect(data).toHaveProperty('accessToken');
+      expect(data).toHaveProperty('refreshToken');
+      expect(data.user).toHaveProperty('id');
 
       const userRepo = dataSource.getRepository(User);
       const user = await userRepo.findOne({
@@ -115,7 +130,8 @@ describe('Auth (E2E)', () => {
         .send(loginDto)
         .expect(200);
 
-      expect(res.body).toHaveProperty('accessToken');
+      const data = res.body as LoginResponse;
+      expect(data).toHaveProperty('accessToken');
 
       // Безопасная проверка куки
       const setCookieHeader = res.headers['set-cookie'];

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { expect } from '@jest/globals';
 
 import { RequestsService } from './requests.service';
 import { Request } from './entities/request.entity';
@@ -223,13 +224,13 @@ describe('RequestsService', () => {
       }) as Request;
 
     it('should accept request, exchange skills, send notification', async () => {
-      mockRequestsRepository.findOne.mockResolvedValue(
-        buildRequest(RequestStatus.PENDING),
-      );
+      const request = buildRequest(RequestStatus.PENDING);
+      mockRequestsRepository.findOne.mockResolvedValue(request);
       mockUsersRepository.findOne
         .mockResolvedValueOnce({ ...sender, skills: [] })
         .mockResolvedValueOnce({ ...receiver, skills: [] });
-      mockRequestsRepository.save.mockImplementation(async (r) => r);
+
+      mockRequestsRepository.save.mockResolvedValue(request);
 
       const result = await service.acceptRequest('req-1', 'receiver-id');
 
@@ -248,7 +249,9 @@ describe('RequestsService', () => {
       mockUsersRepository.findOne
         .mockResolvedValueOnce({ ...sender, skills: [requestedSkill] })
         .mockResolvedValueOnce({ ...receiver, skills: [offeredSkill] });
-      mockRequestsRepository.save.mockImplementation(async (r) => r);
+      const request = buildRequest(RequestStatus.PENDING);
+      mockRequestsRepository.findOne.mockResolvedValue(request);
+      mockRequestsRepository.save.mockResolvedValue(request);
 
       const result = await service.acceptRequest('req-1', 'receiver-id');
 
@@ -303,8 +306,10 @@ describe('RequestsService', () => {
         receiver,
         offeredSkill,
       } as Request;
+
       mockRequestsRepository.findOne.mockResolvedValue(request);
-      mockRequestsRepository.save.mockImplementation(async (r) => r);
+
+      mockRequestsRepository.save.mockResolvedValue(request);
 
       const result = await service.rejectRequest('req-1', 'receiver-id');
 
@@ -361,11 +366,15 @@ describe('RequestsService', () => {
         sender,
         receiver,
       } as Request;
+
       mockRequestsRepository.findOne.mockResolvedValue(request);
-      mockRequestsRepository.save.mockImplementation(async (r) => r);
+
+      mockRequestsRepository.save.mockResolvedValue({
+        ...request,
+        isRead: true,
+      });
 
       const result = await service.markAsRead('req-1', 'receiver-id');
-
       expect(result.isRead).toBe(true);
     });
 

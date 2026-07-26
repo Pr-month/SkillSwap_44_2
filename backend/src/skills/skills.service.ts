@@ -92,11 +92,7 @@ export class SkillsService {
     // Применяем изменения
     Object.assign(skill, updateSkillDto);
 
-    try {
-      return await this.skillsRepository.save(skill);
-    } catch (e) {
-      throw e;
-    }
+    return await this.skillsRepository.save(skill);
   }
 
   async remove(id: string, userId: string): Promise<Skill> {

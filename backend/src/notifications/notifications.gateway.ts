@@ -36,7 +36,7 @@ export class NotificationsGateway
     data.userId = payload.sub;
     client.data = data;
 
-    client.join(payload.sub);
+    void client.join(payload.sub);
   }
 
   handleDisconnect(_client: Socket) {

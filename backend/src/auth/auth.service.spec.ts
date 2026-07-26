@@ -8,12 +8,23 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { User } from '../users/entities/user.entity';
 import { jwtConfig, TJwtConfig } from '../config/jwt.config';
 import { UserGender, UserRole } from '../users/enums/users.enums';
-import ms from 'ms';
+
+interface MockedUsersService {
+  create: jest.Mock;
+  findByEmail: jest.Mock;
+  findOne: jest.Mock;
+  update: jest.Mock;
+}
+
+interface MockedJwtService {
+  signAsync: jest.Mock;
+  verifyAsync: jest.Mock;
+}
 
 describe('AuthService', () => {
   let service: AuthService;
-  let usersService: jest.Mocked<UsersService>;
-  let jwtService: jest.Mocked<JwtService>;
+  let usersService: MockedUsersService;
+  let jwtService: MockedJwtService;
 
   const mockJwtConfig: TJwtConfig = {
     accessSecret: 'access-secret',
@@ -23,25 +34,17 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
-    // --- Автоматическое создание моков для всех методов UsersService ---
-    const mockUsersService = Object.create(UsersService.prototype);
-    for (const key of Object.getOwnPropertyNames(
-      Object.getPrototypeOf(mockUsersService),
-    )) {
-      if (typeof mockUsersService[key] === 'function') {
-        mockUsersService[key] = jest.fn();
-      }
-    }
+    const mockUsersService = {
+      create: jest.fn(),
+      findByEmail: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+    };
 
-    // --- Автоматическое создание моков для всех методов JwtService ---
-    const mockJwtService = Object.create(JwtService.prototype);
-    for (const key of Object.getOwnPropertyNames(
-      Object.getPrototypeOf(mockJwtService),
-    )) {
-      if (typeof mockJwtService[key] === 'function') {
-        mockJwtService[key] = jest.fn();
-      }
-    }
+    const mockJwtService = {
+      signAsync: jest.fn(),
+      verifyAsync: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -52,12 +55,11 @@ describe('AuthService', () => {
       ],
     }).compile();
 
-    service = module.get<AuthService>(AuthService);
-    usersService = module.get<jest.Mocked<UsersService>>(UsersService);
-    jwtService = module.get<jest.Mocked<JwtService>>(JwtService);
+    service = module.get(AuthService);
+    usersService = module.get(UsersService);
+    jwtService = module.get(JwtService);
   });
 
-  // Хелпер для создания валидного мок-пользователя (учитывает все обязательные поля User)
   const createMockUser = (overrides?: Partial<User>): User => ({
     id: 'user-123',
     name: 'Test User',
@@ -93,7 +95,6 @@ describe('AuthService', () => {
         typeof bcrypt.hash
       >;
 
-      // Подменяем метод в объекте bcrypt
       Object.defineProperty(bcrypt, 'hash', {
         value: mockHash,
         writable: true,
@@ -110,7 +111,7 @@ describe('AuthService', () => {
         gender: dto.gender,
       });
 
-      (usersService.create as jest.Mock).mockResolvedValue(expectedUser);
+      usersService.create.mockResolvedValue(expectedUser);
 
       const result = await service.register(dto);
 
@@ -118,7 +119,6 @@ describe('AuthService', () => {
       expect(usersService.create).toHaveBeenCalledWith({
         ...dto,
         password: 'hashed-password',
-        //        birthdate: expect.any(Date),
       });
       expect(result).toEqual(expectedUser);
     });
@@ -129,7 +129,7 @@ describe('AuthService', () => {
       const dto = { email: 'test@example.com', password: 'plain-password' };
       const user: User = createMockUser({ email: dto.email });
 
-      (usersService.findByEmail as jest.Mock).mockResolvedValue(user);
+      usersService.findByEmail.mockResolvedValue(user);
 
       const mockCompare = jest
         .fn()
@@ -158,14 +158,15 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken).toBe('refresh-token');
 
-      // Проверка безопасности: чувствительные данные не возвращаются в ответе
-      expect((result.user as any).password).toBeUndefined();
-      expect((result.user as any).refreshToken).toBeUndefined();
+      const safeUser = result.user as Partial<User>;
+      expect(safeUser.password).toBeUndefined();
+      expect(safeUser.refreshToken).toBeUndefined();
     });
 
     it('should throw UnauthorizedException for invalid credentials', async () => {
       const dto = { email: 'test@example.com', password: 'wrong' };
-      (usersService.findByEmail as jest.Mock).mockResolvedValue(null);
+
+      usersService.findByEmail.mockResolvedValue(null);
 
       await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
       expect(usersService.findByEmail).toHaveBeenCalledWith(dto.email);
@@ -183,7 +184,7 @@ describe('AuthService', () => {
       const user: User = createMockUser({ id: payload.sub, refreshToken });
 
       jwtService.verifyAsync.mockResolvedValue(payload);
-      (usersService.findOne as jest.Mock).mockResolvedValue(user);
+      usersService.findOne.mockResolvedValue(user);
 
       jwtService.signAsync
         .mockResolvedValueOnce('new-access')
@@ -212,7 +213,7 @@ describe('AuthService', () => {
       });
 
       jwtService.verifyAsync.mockResolvedValue(payload);
-      (usersService.findOne as jest.Mock).mockResolvedValue(user);
+      usersService.findOne.mockResolvedValue(user);
 
       await expect(service.refresh(refreshToken)).rejects.toThrow(
         UnauthorizedException,

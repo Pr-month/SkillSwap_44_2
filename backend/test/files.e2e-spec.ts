@@ -1,13 +1,26 @@
+import fs from 'fs';
+import path from 'path';
+
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
-import fs from 'fs';
-import path from 'path';
+
 import { FilesModule } from '../src/files/files.module';
 
+interface UploadResponse {
+  message: string;
+  filename: string;
+  publicUrl: string;
+}
+
+interface ErrorResponse {
+  statusCode: number;
+  message: string;
+}
+
 describe('FilesController E2E', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
 
   const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
 
@@ -17,7 +30,6 @@ describe('FilesController E2E', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-
     await app.init();
   });
 
@@ -27,7 +39,6 @@ describe('FilesController E2E', () => {
     }
 
     const files = fs.readdirSync(uploadsDir);
-
     for (const filename of files) {
       fs.unlinkSync(path.join(uploadsDir, filename));
     }
@@ -48,19 +59,15 @@ describe('FilesController E2E', () => {
       })
       .expect(201);
 
-    expect(response.body).toMatchObject({
-      message: 'File uploaded successfully',
-      filename: expect.any(String),
-      publicUrl: expect.any(String),
-    });
+    const body = response.body as UploadResponse;
 
-    expect(response.body.publicUrl).toBe(`/uploads/${response.body.filename}`);
+    expect(body.message).toBe('File uploaded successfully');
+    expect(typeof body.filename).toBe('string');
+    expect(typeof body.publicUrl).toBe('string');
 
-    const savedFilePath = path.join(
-      uploadsDir,
-      response.body.filename as string,
-    );
+    expect(body.publicUrl).toBe(`/uploads/${body.filename}`);
 
+    const savedFilePath = path.join(uploadsDir, body.filename);
     expect(fs.existsSync(savedFilePath)).toBe(true);
   });
 
@@ -69,10 +76,10 @@ describe('FilesController E2E', () => {
       .post('/files/upload')
       .expect(400);
 
-    expect(response.body).toMatchObject({
-      statusCode: 400,
-      message: 'No file uploaded',
-    });
+    const body = response.body as ErrorResponse;
+
+    expect(body.statusCode).toBe(400);
+    expect(body.message).toBe('No file uploaded');
   });
 
   it('should return 400 when file type is wrong', async () => {
@@ -86,10 +93,10 @@ describe('FilesController E2E', () => {
       })
       .expect(400);
 
-    expect(response.body).toMatchObject({
-      statusCode: 400,
-      message: 'No file uploaded',
-    });
+    const body = response.body as ErrorResponse;
+
+    expect(body.statusCode).toBe(400);
+    expect(body.message).toBe('No file uploaded');
   });
 
   it('should return 413 when file is more than 2 MB', async () => {
@@ -103,6 +110,7 @@ describe('FilesController E2E', () => {
       })
       .expect(413);
 
-    expect(response.body.statusCode).toBe(413);
+    const body = response.body as ErrorResponse;
+    expect(body.statusCode).toBe(413);
   });
 });
