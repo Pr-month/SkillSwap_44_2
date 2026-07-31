@@ -15,13 +15,13 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Включаю CORS 
+  // Включаю CORS
   app.enableCors({
     origin: ['http://localhost:3000'], // домен фронтенда
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // используем авторизацию через заголовки/куки
-  });  
+  });
 
   app.use(cookieParser());
   app.use(
