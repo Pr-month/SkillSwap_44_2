@@ -1,16 +1,63 @@
 services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skillswap_backend
+    command: npm run start:dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - skillswap_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: skillswap_frontend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+    depends_on:
+      - backend
+    networks:
+      - skillswap_net
+
   postgres:
     image: postgres:16
     container_name: skillswap_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: skill_swap
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
     ports:
       - "5432:5432"
     volumes:
       - skillswap_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skillswap_net
 
 volumes:
   skillswap_pgdata:
+
+networks:
+  skillswap_net:
+    driver: bridge
